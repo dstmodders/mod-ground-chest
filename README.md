@@ -1,12 +1,19 @@
 # Ground Chest mod
  A workshop mod for the Klei Entertainment developed game Dont Starve Together.
 
-Code language: Lua(undefined version)
+Code language: Lua
 
 Mod suggested by: @Viktor(https://steamcommunity.com/profiles/76561198053787151/)
 
-Mod developed by: @sauktux(https://steamcommunity.com/profiles/76561198202913736/) and @Viktor(https://steamcommunity.com/profiles/76561198053787151/)
+Mod developed by:
 
+///
+
+@sauktux(https://steamcommunity.com/profiles/76561198202913736/),
+
+@Viktor(https://steamcommunity.com/profiles/76561198053787151/)
+
+///
 
 Boat View - A toggleable scenario for the Ground Chest mod, where it will only display items located on a specific boat.
 
