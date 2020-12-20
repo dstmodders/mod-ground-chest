@@ -10,3 +10,5 @@ local EQUIPSLOTS = _G.EQUIPSLOTS
 local Sleep = _G.Sleep
 local FRAMES = _G.FRAMES
 local require = _G.require
+
+--TO ADD: Group elements in the UI to get an accurate number of different item types in the area.

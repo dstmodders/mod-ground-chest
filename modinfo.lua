@@ -1,11 +1,10 @@
 name = "Ground Chest"
 description = "Open a UI to see items on the ground and interact with them."
-author = "sauktux"
-version = "0"
+author = "sauktux & Viktor"
+version = "0".."v"
 forumthread = ""
 icon_atlas = ""--"modicon.xml"
 icon = ""--"modicon.tex"
-priority = 0
 client_only_mod = true
 all_clients_require_mod = false
 server_only_mod = false
