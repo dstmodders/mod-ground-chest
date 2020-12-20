@@ -113,5 +113,5 @@ local bool_opt = {
 	}--]]
 
 configuration_options = {
-    AddOption("name","Label","Hover",keys_opt,0),
+	AddOption("ui_button","Toggle UI","Press this button to turn the Ground Chest UI On/Off",keys_opt,0),
 }
