@@ -1,2 +1,2 @@
 # Ground Chest mod
- A workshop mod for the Klei Entertainment created game Dont Starve Together
+ A workshop mod for the Klei Entertainment developed game Dont Starve Together.
