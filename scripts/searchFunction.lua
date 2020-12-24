@@ -1,5 +1,3 @@
-local _G = GLOBAL
-local TheSim = _G.TheSim
 
 local function sortByName(a,b)
 	return string.lower(a.name) > string.lower(b.name)
@@ -44,6 +42,7 @@ local function GenerateItemList(pos, distance, matchingText, sortBy)
 				result[num].prefab = prefab
 				result[num].name   = obj.name
 				result[num].amount = obj.replica.stackable and obj.replica.stackable:StackSize() or 1
+				result[num].stackable = obj.replica.stackable
 --				result.skin_id = obj.skin_id
 --				result.skinname = obj.skinname
 				prefabToNum[prefab] = num

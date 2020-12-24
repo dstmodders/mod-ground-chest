@@ -5,8 +5,11 @@ local ImageButton = require "widgets/imagebutton"
 local UIAnim = require "widgets/uianim"
 local UIAnimButton = require "widgets/uianimbutton"
 local GroundChestItemTiles = require "widgets/groundchestitemtiles"
+local searchFunction = require "searchFunction"
 
 local screen_x, screen_y,half_x,half_y,w,h
+
+local update_time = 0
 
 local min_seen = 8 --How much of the widget can minimally be seen when it's moved out of your screen at x or y coordinates?
 --I think 8 is around the size where you might not be able to drag it out.
@@ -37,6 +40,8 @@ end
 local GroundChestUI = Class(Widget,function(self,owner)
         Widget._ctor(self,"GroundChestUI")
 		
+		self.GenerateItemList = searchFunction.GenerateItemList
+		
         screen_x,screen_y = TheSim:GetScreenSize()
         half_x = screen_x/2
         half_y = screen_y/2
@@ -45,6 +50,8 @@ local GroundChestUI = Class(Widget,function(self,owner)
 		
         self.owner = owner
 		self.tiles = {} --Track all tiles that currently exist and aren't deleted.
+		self.ent_list = {}
+		self.page = 1
 		
 		self.pos_x = half_x--Centered
 		self.pos_y = half_y*1.5--At a 0.75/1 position from below.
@@ -57,10 +64,26 @@ local GroundChestUI = Class(Widget,function(self,owner)
 		self.bg = self:AddChild(Image("images/plantregistry.xml", "backdrop.tex"))
 		self:SetPosition(self.pos_x+self.offset_x,self.pos_y+self.offset_y)
 		self.bg:SetSize(self.size_x,self.size_y)
+		self.itembg = {atlas = "images/quagmire_recipebook.xml", tex = "cookbook_known.tex", scale = 0.4}
 		
-		self.test_tile = self.bg:AddChild(GroundChestItemTiles())
-		--self:FillBoard(0.4)--Test function, to be removed when adding tiles in proper way.
-		--Should be replaced via the Widget GroundChestItemTiles.
+		local x_range = 10
+		local y_range = 5
+		for x = 1,x_range do
+			for y = 1,y_range do
+				local tile = self.bg:AddChild(GroundChestItemTiles(nil,self.itembg))
+				self.tiles[x_range*(y-1)+x] = tile
+
+				local min_vx = -8 -- Min distance it has to be from the vertical edges
+				local u_x = self.size_x-2*min_vx
+				local d_x = u_x/(x_range+1)
+				
+				local min_ty = 40 -- Min top
+				local min_by = 16 -- Min bot
+				local u_y = self.size_y-min_ty-min_by
+				local d_y = u_y/(y_range+1)
+				tile:SetPosition((-0.5)*u_x+d_x*x,(0.5)*u_y-min_ty-d_y*y)
+			end
+		end
 		
 		local ongainfocus_fn = function() self.focused = true end
 		local onlosefocus_fn = function() self.focused = false end
@@ -123,17 +146,6 @@ function GroundChestUI:Toggle()
 		self:Show()
 	end
 end
-	
-function GroundChestUI:AddItem(prefab)
-	
-	if not prefab or prefab == "" then return nil end
-	
-	
-	
-end
-
- 
- 
  
 function GroundChestUI:UpdatePosition()
 	self:SetPosition(self.pos_x+self.offset_x,self.pos_y+self.offset_y)
@@ -163,18 +175,33 @@ function GroundChestUI:HandleMouseMovement()
 	end	
 end
 
-function GroundChestUI:GetNearestItem()
-	local pos = ThePlayer:GetPosition()
-	return TheSim:FindEntities(pos.x,0,pos.z,70,{"_inventoryitem"},{"INLIMBO","flying"})[1]
-end
-
-
 function GroundChestUI:OnUpdate(dt)
+	update_time = update_time+dt
+	
 	self:HandleMouseMovement()
-	local item = self:GetNearestItem()
-	if item then
-		local item_atlas = GetInventoryItemAtlas(item.prefab..".tex")
-		self.test_tile:SetItem(item,item_atlas,item.prefab..".tex")
+	if self.shown and update_time > 0.1 then--Feels really weird when it instantly updates.
+		update_time = 0
+		--Page implementation: if self.ent_list is higher than 50 then there is more than one page. Page number: n, self.ent_list updates starting table at 50*(n-1)+1 entity.
+		
+		local x,y,z = ThePlayer.Transform:GetWorldPosition()
+		self.ent_list = self.GenerateItemList({x = x, y = y, z = z},30)
+		for num,tile in pairs(self.tiles) do
+			local entity = self.ent_list[num+50*(self.page-1)] or {}-- 50 is the current number of items supported per page.
+			local prefab = entity.prefab
+			local name = entity.name
+			local amount = entity.amount
+			local stackable = entity.stackable
+			
+			local tex = prefab and prefab..".tex" or nil
+			local atlas = tex and GetInventoryItemAtlas(tex) or nil
+			if prefab then
+				tile:SetItem(prefab,atlas,tex)
+			else
+				tile:RemoveItem()
+			end
+			tile:SetStackText(stackable and amount or nil)
+		end
+		
 	end
 end
 

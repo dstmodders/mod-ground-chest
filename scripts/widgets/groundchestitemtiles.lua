@@ -6,16 +6,14 @@ local UIAnim = require "widgets/uianim"
 local UIAnimButton = require "widgets/uianimbutton"
 
 
---GroundItemTile Class: Holds all item information, is responsible for removing itself when the item entity can't be found anymore. Is NOT responsible for sorting.
---For optimization and to reduce lag, perhaps all tiles should exist and stay, but be hidden if they don't have any item?
+--GroundItemTile Class: Holds some item information, widget clickable for some other functionality.
 local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
         Widget._ctor(self,"GroundItemTile")
 		
-        self.item = item --To keep track of its existence.
-        self.atlas = atlas --Item atlas
-        self.tex = tex --Item tex
-        self.count = count or 1 --Item count(If it's stackable)
-		self.stackable = false --Value gets updated elsewhere.
+        self.item = item --Item prefab
+        self.atlas = atlas or "images/quagmire_recipebook.xml"--Item atlas
+        self.tex = tex or "coin_unknown.tex"--Item tex
+        self.count = count
 		self.chestitem = nil--Compatibility with Chest Memory mod.
 		self.container = nil--Compatibility with Chest Memory mod.
 		self.chestslot = nil--Compatibility with Chest Memory mod.
@@ -62,17 +60,19 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 		self.item_display:SetScale(2,2,2) -- The item is rather small compared to the tile itself.
 		
 		
-		self.count_text = self.item_bg:AddChild(Text(NUMBERFONT,42))
-		self.count_text:SetPosition(2,16) --Default position for an item that's in an "inventory slot"s.
+		self.count_text = self.item_bg:AddChild(Text(NUMBERFONT,64))
+		self.count_text:SetPosition(0,16) --Default position for an item that's in an "inventory slot"s.
 		
-		self.item_bg:SetOnGainFocus(function() self.count_text:SetSize(42*focus_scl) self.count_text:SetPosition(2,16) end)
-		self.item_bg:SetOnLoseFocus(function() self.count_text:SetSize(42) self.count_text:SetPosition(2,16*focus_scl) end)
+		self.item_bg:SetOnGainFocus(function() self.count_text:SetScale(focus_scl) end)
+		self.item_bg:SetOnLoseFocus(function() self.count_text:SetScale(1) end)
+		
+		self:SetStackText(self.count)
+		if not item then self:RemoveItem() end
 
 		self:SetOnClickFn(function() print("*Click*") end)
 		self:SetScale(self.widget_scale)
 		self:Show()
-		self:UpdateStackText()
-        self:StartUpdating()
+        --self:StartUpdating() --Currently no reason to be updating.
 		
 		
     end
@@ -86,19 +86,19 @@ function GroundItemTile:RemoveItem()
 	self.item = nil
 	self.atlas = nil
 	self.tex = nil
-	self.count = 1
+	self.count = nil
 	self.stackable = false
 	self.chestitem = nil
 	self.container = nil
 	self.chestslot = nil
 	self.item_display:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
 	self.item_display:Hide()
-	self:UpdateStackText()
+	self:SetStackText(nil)
 	self:StopUpdating()
 end
 
 function GroundItemTile:SetItem(item,atlas,tex,container,slot)
-	if self.item == item then return end
+	if (self.item == item and self.atlas == atlas and self.tex == tex) then return end
 	self.item = item
 	self.atlas = atlas
 	self.tex = tex
@@ -107,56 +107,44 @@ function GroundItemTile:SetItem(item,atlas,tex,container,slot)
 	self.chestslot = slot
 	self.item_display:SetTextures(atlas,tex)
 	self.item_display:Show()
-	self:StartUpdating()
-end
-    
-function GroundItemTile:UpdateItemStacks()
-	if self.item then
-		if self.chestitem then
-			self.stackable = self.item._stackable
-			self.count = self.item.stacksize
-		else
-			self.stackable = self.item and self.item.components and self.item.components.stackable
-			self.count = self.stackable and self.stackable:StackSize() or 1
-		end
-	end
+	--self:StartUpdating()--Currently no reason to be updating.
 end
 	
-function GroundItemTile:UpdateStackText()
+function GroundItemTile:SetStackText(text)
 	if not self.item then
 		self.count_text:SetString("NO ITEM")
 		self.count_text:Hide()
-	elseif self.item and self.stackable then
+	elseif self.item and text == nil then
+		self.count = text
 		self.count_text:Show()
-		self.count_text:SetString(tostring(self.stackable))
+		self.count_text:SetString("")
+	elseif self.item and text ~= nil then
+		self.count = text
+		self.count_text:Show()
+		self.count_text:SetString(tostring(text))
 	end
 end
 	
-function GroundItemTile:ValidateItem()
-	if self.chestitem then
-		if self.container and self.container.CS_contents then
-			local myitem = self.container.CS_contents[self.chestslot]
-			if myitem and myitem.prefab == self.item.prefab then
-				self.item = myitem --To update the stackable component.
-				return true
-			end
+function GroundItemTile:GetAtlasAndTex()
+	if self.item and self.item.replica and self.item.replica.inventoryitem then
+		local atlas = self.item.replica.inventoryitem:GetAtlas()
+		local tex = self.item.replica.inventoryitem:GetImage()
+		local build = self.item.AnimState:GetBuild()
+		if string.match(build,self.item.prefab) then
+			return atlas,build..".tex"
 		end
-		return nil
-	else
-		return self.item and self.item:IsValid() and not self.item:HasTag("INLIMBO")
+		return atlas,tex
 	end
+	return nil,nil
 end
+
 
 function GroundItemTile:HasItem()
 	return self.item ~= nil
 end
 
 function GroundItemTile:OnUpdate(dt)
-	if not self:ValidateItem() then
-		self:RemoveItem()
-	end
-	self:UpdateItemStacks()
-	self:UpdateStackText()
+	
 end
 
 return GroundItemTile
