@@ -52,6 +52,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 		self.tiles = {} --Track all tiles that currently exist and aren't deleted.
 		self.ent_list = {}
 		self.page = 1
+		self.total_pages = 1
 		
 		self.pos_x = half_x--Centered
 		self.pos_y = half_y*1.5--At a 0.75/1 position from below.
@@ -65,6 +66,87 @@ local GroundChestUI = Class(Widget,function(self,owner)
 		self:SetPosition(self.pos_x+self.offset_x,self.pos_y+self.offset_y)
 		self.bg:SetSize(self.size_x,self.size_y)
 		self.itembg = {atlas = "images/quagmire_recipebook.xml", tex = "cookbook_known.tex", scale = 0.4}
+		
+		self.refreshbutton = self.bg:AddChild(ImageButton("images/button_icons.xml","refresh.tex"))
+		self.refreshbutton:SetPosition(self.size_x*2.9/7,self.size_y*7/20)
+		self.refreshbutton:SetNormalScale(0.2)
+		self.refreshbutton:SetFocusScale(0.2*1.1)
+		self.refreshbutton_fn = function() self:UpdateList() self:UpdateTiles() end
+		self.refreshbutton:SetOnClick(self.refreshbutton_fn)
+		
+		self.refreshbutton_text = self.refreshbutton:AddChild(Text(BUTTONFONT,32))
+		self.refreshbutton_text:SetPosition(0,24)
+		self.refreshbutton_text:SetString("Refresh")
+		self.refreshbutton_text:Hide()
+		
+		self.on_refreshbutton_gainfocus_fn = function() self.refreshbutton_text:Show() end
+		self.on_refreshbutton_losefocus_fn = function() self.refreshbutton_text:Hide() end
+		self.refreshbutton:SetOnGainFocus(self.on_refreshbutton_gainfocus_fn)
+		self.refreshbutton:SetOnLoseFocus(self.on_refreshbutton_losefocus_fn)
+		--[[
+		self.textbox = self.bg:AddChild(Image("images/textboxes.xml", "textbox3_gold_normal.tex"))
+		self.textbox:SetSize(self.size_x/3,self.size_y/8)
+		self.textbox:SetPosition(-self.size_x*2/7,7*self.size_y/20)
+		self.textbox:Show()
+		--]]--Use a screen for text input.
+		
+		--Just gonna grab the texture names from Klei's plantspage.lua
+		local left_textures = {
+			normal = "arrow2_left.tex",
+			over = "arrow2_left_over.tex",
+			disabled = "arrow_left_disabled.tex",
+			down = "arrow2_left_down.tex",
+		}
+		local right_textures = {
+			normal = "arrow2_right.tex",
+			over = "arrow2_right_over.tex",
+			disabled = "arrow_right_disabled.tex",
+			down = "arrow2_right_down.tex",
+		}
+		
+		self.arrow_left = self.bg:AddChild(ImageButton("images/plantregistry.xml",left_textures.normal,left_textures.over,left_textures.disabled,left_textures.down))
+		self.arrow_left:SetPosition(self.size_x*-1/7,self.size_y*7/20)
+		self.arrow_left:SetNormalScale(0.5)
+		self.arrow_left:SetFocusScale(0.5)
+		
+		self.arrow_left_fn = function () self:RetreatPage() end
+		self.arrow_left:SetOnClick(self.arrow_left_fn)
+		
+		self.arrow_left_text = self.arrow_left:AddChild(Text(BUTTONFONT,32))
+		self.arrow_left_text:SetPosition(0,24)
+		self.arrow_left_text:SetString("Previous Page")
+		self.arrow_left_text:Hide()
+		
+		self.on_arrow_left_gainfocus_fn = function() self.arrow_left_text:Show() end
+		self.on_arrow_left_losefocus_fn = function() self.arrow_left_text:Hide() end
+		self.arrow_left:SetOnGainFocus(self.on_arrow_left_gainfocus_fn)
+		self.arrow_left:SetOnLoseFocus(self.on_arrow_left_losefocus_fn)
+		
+		
+		self.arrow_right = self.bg:AddChild(ImageButton("images/plantregistry.xml",right_textures.normal,right_textures.over,right_textures.disabled,right_textures.down))
+		self.arrow_right:SetPosition(self.size_x*1/7,self.size_y*7/20)
+		self.arrow_right:SetNormalScale(0.5)
+		self.arrow_right:SetFocusScale(0.5)
+		
+		self.arrow_right_fn = function() self:AdvancePage() end
+		self.arrow_right:SetOnClick(self.arrow_right_fn)
+		
+		self.arrow_right_text = self.arrow_right:AddChild(Text(BUTTONFONT,32))
+		self.arrow_right_text:SetPosition(0,24)
+		self.arrow_right_text:SetString("Next Page")
+		self.arrow_right_text:Hide()
+		
+		self.on_arrow_right_gainfocus_fn = function() self.arrow_right_text:Show() end
+		self.on_arrow_right_losefocus_fn = function() self.arrow_right_text:Hide() end
+		self.arrow_right:SetOnGainFocus(self.on_arrow_right_gainfocus_fn)
+		self.arrow_right:SetOnLoseFocus(self.on_arrow_right_losefocus_fn)
+		
+		self.page_text = self.bg:AddChild(Text(BUTTONFONT,32))
+		self.page_text:SetPosition(0,self.size_y*7/20)
+		self.page_text:SetColour(1,201/255,14/255,1)--Gold coloured.
+		self.page_text:SetString("Page 1")
+		
+		
 		
 		local x_range = 10
 		local y_range = 5
@@ -143,6 +225,8 @@ function GroundChestUI:Toggle()
 		self:Hide()
 	else
 		self.shown = true
+		self:UpdateList()--Opening up the UI should give you new info without the need to press the "Refresh" button.
+		self:UpdateTiles()
 		self:Show()
 	end
 end
@@ -175,34 +259,83 @@ function GroundChestUI:HandleMouseMovement()
 	end	
 end
 
-function GroundChestUI:OnUpdate(dt)
-	update_time = update_time+dt
-	
-	self:HandleMouseMovement()
-	if self.shown and update_time > 0.1 then--Feels really weird when it instantly updates.
-		update_time = 0
-		--Page implementation: if self.ent_list is higher than 50 then there is more than one page. Page number: n, self.ent_list updates starting table at 50*(n-1)+1 entity.
+function GroundChestUI:UpdateTiles()
+	for num,tile in pairs(self.tiles) do
+		local entity = self.ent_list[num+50*(self.page-1)] or {}-- 50 is the current number of items supported per page.
+		local prefab = entity.prefab
+		local name = entity.name
+		local amount = entity.amount
+		local stackable = entity.stackable
 		
-		local x,y,z = ThePlayer.Transform:GetWorldPosition()
-		self.ent_list = self.GenerateItemList({x = x, y = y, z = z},30)
-		for num,tile in pairs(self.tiles) do
-			local entity = self.ent_list[num+50*(self.page-1)] or {}-- 50 is the current number of items supported per page.
-			local prefab = entity.prefab
-			local name = entity.name
-			local amount = entity.amount
-			local stackable = entity.stackable
-			
-			local tex = prefab and prefab..".tex" or nil
-			local atlas = tex and GetInventoryItemAtlas(tex) or nil
-			if prefab then
-				tile:SetItem(prefab,atlas,tex)
-			else
-				tile:RemoveItem()
-			end
-			tile:SetStackText(stackable and amount or nil)
+		local tex = prefab and prefab..".tex" or nil
+		local atlas = tex and GetInventoryItemAtlas(tex) or nil
+		if prefab then
+			tile:SetItem(prefab,atlas,tex)
+		else
+			tile:RemoveItem()
 		end
-		
+		tile:SetStackText(stackable and amount or nil)
 	end
+end
+
+function GroundChestUI:UpdateList()
+	local x,y,z = ThePlayer.Transform:GetWorldPosition()
+	self.ent_list = self.GenerateItemList({x = x, y = y, z = z},30)
+	self:UpdatePages()
+	self:UpdatePageText()
+end
+
+function GroundChestUI:AdvancePage()
+	local page = self.page
+	if page+1 > self.total_pages then --Loop or do nothing.
+		
+	else
+		self.page = self.page+1
+	end
+	
+	self:UpdateTiles()
+	self:UpdatePageText()
+end
+
+function GroundChestUI:RetreatPage()
+	local page = self.page
+	if page-1 < 1 then --Loop or do nothing.
+		
+	else
+		self.page = self.page-1
+	end
+	
+	self:UpdateTiles()
+	self:UpdatePageText()
+end
+
+function GroundChestUI:UpdatePageText()
+	self.page_text:SetString("Page "..self.page)
+	--Also update the widgets to be clickable/non-clickable:
+	if self.page == 1 then
+		self.arrow_left:Disable()
+	else
+		self.arrow_left:Enable()
+	end
+	if self.page == self.total_pages then
+		self.arrow_right:Disable()
+	else
+		self.arrow_right:Enable()
+	end
+end
+
+
+function GroundChestUI:UpdatePages()
+	self.total_pages = math.ceil(#self.ent_list/50)
+	if self.page > self.total_pages then --Don't move them from their current page unless it doesn't have anything left.
+		self.page = self.total_pages
+		self:UpdateTiles()
+		self:UpdatePageText()
+	end
+end
+
+function GroundChestUI:OnUpdate(dt)
+	self:HandleMouseMovement()
 end
 
 if ui_button and ui_button ~= 0 then
