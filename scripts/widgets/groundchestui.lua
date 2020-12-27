@@ -6,6 +6,7 @@ local UIAnim = require "widgets/uianim"
 local UIAnimButton = require "widgets/uianimbutton"
 local GroundChestItemTiles = require "widgets/groundchestitemtiles"
 local searchFunction = require "searchFunction"
+local GroundChestUIScreen = require "screens/groundchestuiscreen"
 
 local screen_x, screen_y,half_x,half_y,w,h
 
@@ -83,12 +84,6 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.on_refreshbutton_losefocus_fn = function() self.refreshbutton_text:Hide() end
 	self.refreshbutton:SetOnGainFocus(self.on_refreshbutton_gainfocus_fn)
 	self.refreshbutton:SetOnLoseFocus(self.on_refreshbutton_losefocus_fn)
-	--[[
-	self.textbox = self.bg:AddChild(Image("images/textboxes.xml", "textbox3_gold_normal.tex"))
-	self.textbox:SetSize(self.size_x/3,self.size_y/8)
-	self.textbox:SetPosition(-self.size_x*2/7,7*self.size_y/20)
-	self.textbox:Show()
-	--]]--Use a screen for text input.
 
 	--Just gonna grab the texture names from Klei's plantspage.lua
 	local left_textures = {
@@ -149,10 +144,10 @@ local GroundChestUI = Class(Widget,function(self,owner)
 
 	local TEMPLATES = require "widgets/redux/templates"
 
-	local box_size = 180
+	local box_size = 140
 	local box_height = 40
 	self.searchbox_root = self.bg:AddChild(TEMPLATES.StandardSingleLineTextEntry(nil, box_size, box_height, nil, nil, "Search"))
-	self.searchbox_root:SetPosition(self.size_x*-1/2,self.size_y*1/2)
+	self.searchbox_root:SetPosition(self.size_x*-2.25/7,self.size_y*7/20)
 	self.searchbox = self.searchbox_root.textbox
 	self.searchbox:SetTextLengthLimit(50)
 	self.searchbox:SetForceEdit(true)
@@ -162,8 +157,9 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.searchbox.OnTextInputted = function()
 --		print(self.searchbox:GetString())
 	end
-	self.searchbox:SetOnGainFocus( function() self.searchbox:OnGainFocus() end )
-	self.searchbox:SetOnLoseFocus( function() self.searchbox:OnLoseFocus() end )
+	self.searchbox.OnMouseButton = function(_, button, down) if not down then self:CreateScreen() end end
+	--self.searchbox:SetOnGainFocus( function() self.searchbox:OnGainFocus() end )
+	--self.searchbox:SetOnLoseFocus( function() self.searchbox:OnLoseFocus() end )
 
 	local x_range = 10
 	local y_range = 5
@@ -194,6 +190,12 @@ local GroundChestUI = Class(Widget,function(self,owner)
 
 	self:StartUpdating()
 end)
+
+function GroundChestUI:CreateScreen()
+	if self.textscreen then self.textscreen:Kill() end
+	self.textscreen = self:AddChild(GroundChestUIScreen(self.searchbox))
+	TheFrontEnd:PushScreen(self.textscreen)
+end
 
 function GroundChestUI:FillBoard(scale) -- Function for testing, use as reference, do not use for anything other than testing.
 	self.bgitem = self.bg:AddChild(ImageButton("images/quagmire_recipebook.xml","cookbook_known.tex"))
