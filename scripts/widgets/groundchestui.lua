@@ -7,6 +7,7 @@ local UIAnimButton = require "widgets/uianimbutton"
 local GroundChestItemTiles = require "widgets/groundchestitemtiles"
 local searchFunction = require "searchFunction"
 local GroundChestUIScreen = require "screens/groundchestuiscreen"
+local TEMPLATES = require "widgets/redux/templates"
 
 local screen_x, screen_y,half_x,half_y,w,h
 
@@ -40,8 +41,9 @@ end
 
 local GroundChestUI = Class(Widget,function(self,owner)
       Widget._ctor(self,"GroundChestUI")
-		
+
 	self.GenerateItemList = searchFunction.GenerateItemList
+	self.FetchItemList    = searchFunction.FetchItemList
 		
       screen_x,screen_y = TheSim:GetScreenSize()
       half_x = screen_x/2
@@ -51,7 +53,8 @@ local GroundChestUI = Class(Widget,function(self,owner)
 
 	self.owner = owner
 	self.tiles = {} --Track all tiles that currently exist and aren't deleted.
-	self.ent_list = {}
+	self.data_list = {}
+	self.item_list = {}
 	self.page = 1
 	self.total_pages = 1
 
@@ -72,7 +75,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.refreshbutton:SetPosition(self.size_x*2.9/7,self.size_y*7/20)
 	self.refreshbutton:SetNormalScale(0.2)
 	self.refreshbutton:SetFocusScale(0.2*1.1)
-	self.refreshbutton_fn = function() self:UpdateList() self:UpdateTiles() end
+	self.refreshbutton_fn = function() self:RefreshList() end
 	self.refreshbutton:SetOnClick(self.refreshbutton_fn)
 
 	self.refreshbutton_text = self.refreshbutton:AddChild(Text(BUTTONFONT,32))
@@ -142,10 +145,9 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.page_text:SetString("Page 1")
 
 
-	local TEMPLATES = require "widgets/redux/templates"
-
 	local box_size = 140
 	local box_height = 40
+	self.searchtext = ""
 	self.searchbox_root = self.bg:AddChild(TEMPLATES.StandardSingleLineTextEntry(nil, box_size, box_height, nil, nil, "Search"))
 	self.searchbox_root:SetPosition(self.size_x*-2.25/7,self.size_y*7/20)
 	self.searchbox = self.searchbox_root.textbox
@@ -155,6 +157,11 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.searchbox:EnableScrollEditWindow(true)
 	self.searchbox.prompt:SetHAlign(ANCHOR_MIDDLE)
 	self.searchbox.OnTextInputted = function()
+--		self.ent_list = self.FetchItemList(self.data_list, self.searchbox:GetString())
+		if self.searchtext ~= self.searchbox:GetString() then
+			self.searchtext = self.searchbox:GetString()
+			self:UpdateList()
+		end
 --		print(self.searchbox:GetString())
 	end
 	self.searchbox.OnMouseButton = function(_, button, down) if not down then self:CreateScreen() end end
@@ -190,6 +197,11 @@ local GroundChestUI = Class(Widget,function(self,owner)
 
 	self:StartUpdating()
 end)
+
+function GroundChestUI:ClearSearchbox()
+	self.searchbox:SetString("")
+	self.searchtext = ""
+end
 
 function GroundChestUI:CreateScreen()
 	if self.textscreen then self.textscreen:Kill() end
@@ -244,8 +256,9 @@ function GroundChestUI:Toggle()
 		self:Hide()
 	else
 		self.shown = true
-		self:UpdateList() -- Opening up the UI should give you new info without the need to press the "Refresh" button.
-		self:UpdateTiles()
+		self:ClearSearchbox()
+		self:RefreshList() -- Opening up the UI should give you new info without the need to press the "Refresh" button.
+--		self:UpdateTiles()
 		self:Show()
 	end
 end
@@ -280,12 +293,12 @@ end
 
 function GroundChestUI:UpdateTiles()
 	for num,tile in pairs(self.tiles) do
-		local entity = self.ent_list[num+50*(self.page-1)] or {}-- 50 is the current number of items supported per page.
+		local entity = self.item_list[num+50*(self.page-1)] or {} -- 50 is the current number of items supported per page.
 		local prefab = entity.prefab
-		local name = entity.name
+		local name   = entity.name
 		local amount = entity.amount
 		local durability = entity.durability
-		local skin = entity.skinname
+		local skin   = entity.skin
 
 		local tex = skin and skin..".tex" or prefab and prefab..".tex" or nil
 --		local tex = prefab and prefab..".tex" or nil
@@ -304,11 +317,19 @@ function GroundChestUI:UpdateTiles()
 	end
 end
 
-function GroundChestUI:UpdateList()
+function GroundChestUI:RefreshList()
 	local x,y,z = ThePlayer.Transform:GetWorldPosition()
-	self.ent_list = self.GenerateItemList({x = x, y = y, z = z},30,self.searchbox:GetString())
+	self.data_list = self.GenerateItemList({x = x, y = y, z = z},30)
+	print("list refreshed", #self.data_list)
+	self:UpdateList()
+end
+
+function GroundChestUI:UpdateList()
+	self.item_list = self.FetchItemList(self.data_list, self.searchbox:GetString())
+	print("list updated", #self.item_list, self.searchbox:GetString())
 	self:UpdatePages()
 	self:UpdatePageText()
+	self:UpdateTiles()
 end
 
 function GroundChestUI:AdvancePage()
@@ -352,7 +373,7 @@ end
 
 
 function GroundChestUI:UpdatePages()
-	self.total_pages = math.max(math.ceil(#self.ent_list/50),1)
+	self.total_pages = math.max(math.ceil(#self.item_list/50),1)
 	if self.page > self.total_pages then -- Don't move them from their current page unless it doesn't have anything left.
 		self.page = self.total_pages
 		self:UpdateTiles()

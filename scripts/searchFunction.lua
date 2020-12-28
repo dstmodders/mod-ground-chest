@@ -1,26 +1,18 @@
 
-local function sortByName(a,b)
---	local nameA, nameB = string.lower(a.name), string.lower(b.name)
-	return string.lower(a.name) < string.lower(b.name)
-end
-
-local sortingFunctions = {
---	["distance"] = nil,
-	["name"] = sortByName,
---	["durability"] = sortByDurability,
-}
-
-
+--local currentList = nil
 -- GenerateItemList (WIP)
 --  matchingText: If not equal nil then the objects name must contain the string in their name to be included
 --  sortBy: Insert a string to decide how the list is going to be sorted
 --	Currently available possibilities:	
 --	- distance: Sort by distance from closest to furthest away
 --	- name: Sort alphabetically from A to Z
---
-local function GenerateItemList(pos, distance, matchingText, sortBy)
+
+local function GetSkin(obj)
+	return obj.AnimState and obj.AnimState:GetBuild() or obj.skinname
+end
+
+local function GenerateItemList(pos, distance, matchingText, sortBy) -- TODO: Remove matchingText and sortBy
 	local entities = TheSim:FindEntities(pos.x, pos.y, pos.z, distance, {"_inventoryitem"}, {"FX", "NOCLICK", "DECOR", "INLIMBO", "catchable", "mineactive", "intense"})
-	local durabilityOnly = true
 	if matchingText then
 		matchingText = string.lower(matchingText)
 		for i = #entities,1,-1 do
@@ -32,60 +24,106 @@ local function GenerateItemList(pos, distance, matchingText, sortBy)
 	end
 	for i = #entities,1,-1 do
 		local obj = entities[i]
-		if obj.replica.inventoryitem ~= nil and not obj.replica.inventoryitem:CanBePickedUp() then
+		if obj.replica.inventoryitem == nil or not obj.replica.inventoryitem:CanBePickedUp() then
 			table.remove(entities,i)
-		elseif durabilityOnly and not obj.components.finiteuses then
-			durabilityOnly = false
 		end
+		-- TODO: Add checks for items in water (ignore) and boats (ignore if not on the same boat)
 	end
-	if sortBy == nil then sortBy = "name" end
-	if sortingFunctions[sortBy] then
-		table.sort(entities,sortingFunctions[sortBy])
-	end
-	-- Todo: If all found objects have a durability, show every item single with its durability instead of stacked together
 	local result = {}
-	local prefabToNum = {}
 	local num = 1
-	if durabilityOnly then -- Display all items with their corresponding durability and skins
-		-- Todo: Items with the same skin and no durability should be stacked together
-		for i = 1,#entities do
-			local obj = entities[i]
-			if obj then
-				result[num] = {}
-				result[num].prefab = obj.prefab
-				result[num].name = obj.name
-				result[num].amount = nil
-				result[num].durability = math.floor(obj.components.finiteuses:GetPercent()*100.0)
-				result[num].entity = obj
-				result[num].skin_id = obj.skin_id
-				result[num].skinname = obj.skinname
-				num = num+1
-			end
-		end
-		return result
-	end
+	local prefabToNum = {}
 	for i = 1,#entities do
 		local obj = entities[i]
 		if obj then
 			local prefab = obj.prefab
 			if not prefabToNum[prefab] then
 				result[num] = {}
+				result[num].groups = {}
 				result[num].prefab = prefab
 				result[num].name   = obj.name
+				result[num].durability = obj.components.finiteuses ~= nil
 				if obj.replica.stackable then
 					result[num].amount = obj.replica.stackable:StackSize() or 0
 				else
 					result[num].amount = 1
 				end
+				if result[num].durability then
+					result[num].groups[#result[num].groups + 1] = obj
+				else
+					result[num].groups[GetSkin(obj) or "none"] = result[num].amount
+				end
 				prefabToNum[prefab] = num
 				num = num+1
 			else
 				local num = prefabToNum[prefab]
-				result[num].amount = result[num].amount + (obj.replica.stackable and obj.replica.stackable:StackSize() or 1)
+				local amount = obj.replica.stackable and obj.replica.stackable:StackSize() or 1
+				result[num].amount = result[num].amount + amount
+				if result[num].durability then
+					result[num].groups[#result[num].groups + 1] = obj
+				else
+					local skin = GetSkin(obj) or "none"
+					result[num].groups[skin] = (result[num].groups[skin] or 0) + amount
+				end
 			end
 		end
 	end
 	return result
 end
 
-return {GenerateItemList = GenerateItemList}
+local function sortResult(a,b)
+	if a.prefab ~= b.prefab then
+		return a.name < b.name
+	elseif a.durability and b.durability then
+		return a.durability > b.durability
+	elseif a.skin or b.skin then
+		return a.skin == nil and true or b.skin ~= nil and a.skin < b.skin or false
+	end
+	return a.prefab < b.prefab
+end
+
+local function FetchItemList(datalist, matchingText)
+	if not datalist then return nil end
+	local result = {}
+	local num = 1
+	local advanced = matchingText and matchingText ~= ""
+	matchingText = string.lower(matchingText)
+	for i = 1,#datalist do
+		if not matchingText or string.find(string.lower(datalist[i].name),matchingText) then
+			if advanced then
+				local name = datalist[i].name
+				local prefab = datalist[i].prefab
+				if datalist[i].durability then
+					for k,v in pairs(datalist[i].groups) do
+						result[num] = {}
+						result[num].name   = name
+						result[num].prefab = prefab
+						--result[num].amount = nil
+						result[num].durability = math.floor(v.components.finiteuses:GetPercent()*100)
+						result[num].skin   = GetSkin(obj)
+						num = num + 1
+					end
+				else
+					for k,v in pairs(datalist[i].groups) do
+						result[num] = {}
+						result[num].name   = name
+						result[num].prefab = prefab
+						result[num].amount = v
+						result[num].skin   = k ~= "none" and k or nil
+						num = num + 1
+					end
+				end
+			else
+				result[num] = {}
+				result[num].name   = datalist[i].name
+				result[num].prefab = datalist[i].prefab
+				result[num].amount = datalist[i].amount
+				num = num + 1
+			end
+		end
+	end
+	table.sort(result,sortResult)
+	return result
+end
+
+return {GenerateItemList = GenerateItemList,
+	FetchItemList = FetchItemList}
