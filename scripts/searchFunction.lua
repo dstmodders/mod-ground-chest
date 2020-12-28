@@ -1,27 +1,11 @@
 
---local currentList = nil
--- GenerateItemList (WIP)
---  matchingText: If not equal nil then the objects name must contain the string in their name to be included
---  sortBy: Insert a string to decide how the list is going to be sorted
---	Currently available possibilities:	
---	- distance: Sort by distance from closest to furthest away
---	- name: Sort alphabetically from A to Z
-
 local function GetSkin(obj)
-	return obj.AnimState and obj.AnimState:GetBuild() or obj.skinname
+	local skin = obj.skinname or obj.AnimState and obj.AnimState:GetBuild()
+	return STRINGS.SKIN_NAMES[skin] and skin or nil
 end
 
-local function GenerateItemList(pos, distance, matchingText, sortBy) -- TODO: Remove matchingText and sortBy
+local function GenerateItemList(pos, distance)
 	local entities = TheSim:FindEntities(pos.x, pos.y, pos.z, distance, {"_inventoryitem"}, {"FX", "NOCLICK", "DECOR", "INLIMBO", "catchable", "mineactive", "intense"})
-	if matchingText then
-		matchingText = string.lower(matchingText)
-		for i = #entities,1,-1 do
-			local obj = entities[i]
-			if not string.find(string.lower(obj.name),matchingText) then
-				table.remove(entities,i)
-			end
-		end
-	end
 	for i = #entities,1,-1 do
 		local obj = entities[i]
 		if obj.replica.inventoryitem == nil or not obj.replica.inventoryitem:CanBePickedUp() then
@@ -99,7 +83,7 @@ local function FetchItemList(datalist, matchingText)
 						result[num].prefab = prefab
 						--result[num].amount = nil
 						result[num].durability = math.floor(v.components.finiteuses:GetPercent()*100)
-						result[num].skin   = GetSkin(obj)
+						result[num].skin   = GetSkin(v)
 						num = num + 1
 					end
 				else
