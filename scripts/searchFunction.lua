@@ -5,13 +5,15 @@ local function GetSkin(obj)
 end
 
 local function GenerateItemList(pos, distance)
+	local platform = TheWorld.Map:GetPlatformAtPoint(pos.x, pos.z)
 	local entities = TheSim:FindEntities(pos.x, pos.y, pos.z, distance, {"_inventoryitem"}, {"FX", "NOCLICK", "DECOR", "INLIMBO", "catchable", "mineactive", "intense"})
 	for i = #entities,1,-1 do
 		local obj = entities[i]
 		if obj.replica.inventoryitem == nil or not obj.replica.inventoryitem:CanBePickedUp() then
 			table.remove(entities,i)
+		elseif obj:GetCurrentPlatform() ~= platform or obj:IsOnOcean(false) then -- Objects located not in the same boat or in the ocean are excluded from the list
+			table.remove(entities,i)
 		end
-		-- TODO: Add checks for items in water (ignore) and boats (ignore if not on the same boat)
 	end
 	local result = {}
 	local num = 1
@@ -82,7 +84,8 @@ local function FetchItemList(datalist, matchingText)
 						result[num].name   = name
 						result[num].prefab = prefab
 						--result[num].amount = nil
-						result[num].durability = math.floor(v.components.finiteuses:GetPercent()*100)
+						result[num].obj    = v
+						result[num].durability = math.max(math.floor(v.components.finiteuses:GetPercent()*100 + 0.5),1)
 						result[num].skin   = GetSkin(v)
 						num = num + 1
 					end
