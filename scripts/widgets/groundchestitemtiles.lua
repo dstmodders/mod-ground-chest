@@ -14,6 +14,9 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 	self.atlas = atlas or "images/quagmire_recipebook.xml" -- Item atlas
 	self.tex = tex or "coin_unknown.tex"--Item tex
 	self.count = count
+	self.queued = false
+	self.global_highlight = false
+	self.skinned = false
 	self.chestitem = nil -- Compatibility with Chest Memory mod.
 	self.container = nil -- Compatibility with Chest Memory mod.
 	self.chestslot = nil -- Compatibility with Chest Memory mod.
@@ -72,14 +75,49 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 --	self:SetStackText(self.count)
 	if not item then self:RemoveItem() end
 
-	self:SetOnClickFn(function() print("*Click*") end)
+	self.item_display:SetOnGainFocus(function() self:HighlightSelf(true) end)
+	self.item_display:SetOnLoseFocus(function() self:HighlightSelf(false) end)
+
 	self:SetScale(self.widget_scale)
 	self:Show()
-	--self:StartUpdating() --Currently no reason to be updating.
+	--self:StartUpdating() -- Currently no reason to be updating.
 end)
 
 function GroundItemTile:SetOnClickFn(fn)
 	self.item_bg:SetOnClick(fn)
+end
+
+function GroundItemTile:SetGlobalHighlight(global)
+	if global then
+		self.global_highlight = true
+	else
+		self.global_highlight = false
+	end
+end
+
+function GroundItemTile:ToggleQueue()
+	self:SetQueue(not self.queued)
+end
+
+function GroundItemTile:SetQueue(queue,visual)
+	local build
+	local isheld_shift = TheInput:IsKeyDown(KEY_SHIFT)
+	if self.tex then
+		build = string.sub(self.tex,1,-5)
+	end
+	if queue then
+		self.item_bg:SetTextures("images/quagmire_recipebook.xml","recipe_known.tex")
+		self.queued = true
+		if not visual then
+			ThePlayer.components.groundchestpickupqueuer:AddToQueue(self.item,build,isheld_shift,self.skinned)
+		end
+	else
+		self.item_bg:SetTextures(self.bg.atlas,self.bg.tex)
+		self.queued = false
+		if not visual then
+			ThePlayer.components.groundchestpickupqueuer:RemoveFromQueue(self.item,build,self.skinned)
+		end
+	end
 end
 
 function GroundItemTile:RemoveItem()
@@ -87,20 +125,23 @@ function GroundItemTile:RemoveItem()
 	self.atlas = nil
 	self.tex = nil
 	self.count = nil
+	self.skinned = nil
 	self.chestitem = nil
 	self.container = nil
 	self.chestslot = nil
 	self.item_display:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
 	self.item_display:Hide()
+	self:SetQueue(false)
 	self:SetText(nil)
 	self:StopUpdating()
 end
 
-function GroundItemTile:SetItem(item,atlas,tex,container,slot)
+function GroundItemTile:SetItem(item,atlas,tex,skinned,container,slot)
 	if (self.item == item and self.atlas == atlas and self.tex == tex) then return end
 	self.item = item
 	self.atlas = atlas
 	self.tex = tex
+	self.skinned = skinned
 	self.chestitem = container ~= nil
 	self.container = container
 	self.chestslot = slot
@@ -109,6 +150,47 @@ function GroundItemTile:SetItem(item,atlas,tex,container,slot)
 	self.item_display:SetHoverText(item and STRINGS.NAMES[string.upper(item)] or "")
 	--self:StartUpdating()--Currently no reason to be updating.
 end
+
+local function IsMatchingTex(entity,tex)
+	local entity_skin = entity.AnimState and STRINGS.SKIN_NAMES[entity.AnimState:GetBuild()] and entity.AnimState:GetBuild()
+	local entity_tex = entity_skin and entity_skin..".tex" or entity.prefab..".tex"
+	if entity_tex == tex then
+		return true
+	end
+	return false
+end
+
+function GroundItemTile:GetSelfItemList()
+	if not self.item then return {} end
+	local pos = ThePlayer:GetPosition()
+	local ent_list = TheSim:FindEntities(pos.x,0,pos.z,80,{"_inventoryitem"}, {"FX", "NOCLICK", "DECOR"})
+	local valid_ent_list = {}
+	for k,ent in pairs(ent_list) do
+		if ent.prefab == self.item and (self.global_highlight or IsMatchingTex(ent,self.tex)) then
+			table.insert(valid_ent_list,#valid_ent_list+1,ent)
+		end
+	end
+	return valid_ent_list
+end
+
+function GroundItemTile:HighlightSelf(highlight,colour)
+	local valid_ents = self:GetSelfItemList()
+	local rgb = type(colour) == "table" and colour or {32/255,128/255,255/255,1}
+	if highlight then
+		for k,ent in pairs(valid_ents) do
+			if ent.AnimState then
+				ent.AnimState:SetAddColour(unpack(rgb))
+			end
+		end
+	else
+		for k,ent in pairs(valid_ents) do
+			if ent.AnimState then
+				ent.AnimState:SetAddColour(0,0,0,1)
+			end
+		end
+	end
+end
+
 
 function GroundItemTile:SetText(amount, durability)
 	if not self.item then
@@ -135,6 +217,7 @@ function GroundItemTile:SetStackText(text)
 end
 ]]
 
+--[[
 function GroundItemTile:GetAtlasAndTex()
 	if self.item and self.item.replica and self.item.replica.inventoryitem then
 		local atlas = self.item.replica.inventoryitem:GetAtlas()
@@ -147,7 +230,7 @@ function GroundItemTile:GetAtlasAndTex()
 	end
 	return nil,nil
 end
-
+]]
 
 function GroundItemTile:HasItem()
 	return self.item ~= nil

@@ -57,6 +57,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.item_list = {}
 	self.page = 1
 	self.total_pages = 1
+	self.queue_conditions = {}
 
 	self.pos_x = half_x--Centered
 	self.pos_y = half_y*1.5--At a 0.75/1 position from below.
@@ -192,6 +193,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.bg:SetOnGainFocus(ongainfocus_fn)
 	self.bg:SetOnLoseFocus(onlosefocus_fn)
 
+	ThePlayer:ListenForEvent("groundchestpickupqueuer_stopped",function() self.queue_conditions = {} self:UpdateTiles() end)
 	self.shown = false
 	self:Hide()
 
@@ -207,47 +209,6 @@ function GroundChestUI:CreateScreen()
 	if self.textscreen then self.textscreen:Kill() end
 	self.textscreen = self:AddChild(GroundChestUIScreen(self.searchbox))
 	TheFrontEnd:PushScreen(self.textscreen)
-end
-
-function GroundChestUI:FillBoard(scale) -- Function for testing, use as reference, do not use for anything other than testing.
-	self.bgitem = self.bg:AddChild(ImageButton("images/quagmire_recipebook.xml","cookbook_known.tex"))
-	self.bgitem:SetPosition(0,0)
-	self.bgitem:SetOnClick(function() print("Clickity Click") end)
-	self.bgitem:Hide()
-	w,h = self.bgitem:GetSize()
-	w = w*scale
-	h = h*scale
-
-	for x = 1,math.floor(self.size_x/w) do
-		for y = 1,math.floor(self.size_y/h)-2 do
-			self.bgitem = self.bg:AddChild(ImageButton("images/quagmire_recipebook.xml","recipe_known.tex"))
-			self.bgitem:SetScale(scale)
-
-			local min_vx = -8 -- Min distance it has to be from the vertical edges
-			local u_x = self.size_x-2*min_vx
-			local d_x = u_x/(math.floor(self.size_x/w+1))
-
-			local min_tz = 32 -- Min top
-			local min_bz = 8 -- Min bot
-			local u_z = self.size_y-min_tz-min_bz
-			local d_z = u_z/(math.floor(self.size_y/h-2)+1)
-			self.bgitem:SetPosition((-0.5)*u_x+d_x*x,(0.5)*u_z-min_tz-d_z*y)
-
-			self.bgitem:SetOnClick(function() print("Clickity Click") end)
-			self.bgitem:Show()
-
-			self.testitem = self.bgitem:AddChild(ImageButton(GetInventoryItemAtlas("cane_ancient.tex"),"cane_ancient.tex"))
-			self.testitem:SetScale(2)
-			self.testitem:Show()
-			self.testitemcount = self.bgitem:AddChild(Text(NUMBERFONT,72))
-			self.testitemcount:SetPosition(0,-30)
-			self.testitemcount:SetString(tostring(math.random(1,40)))
-			self.testitemcount:MoveToFront()
-			self.testitemcount:Show()
-			self.bgitem:SetOnGainFocus(function() self.testitemcount:SetSize(72*1.2) self.testitemcount:SetPosition(0,-30*1.2) end)
-			self.bgitem:SetOnLoseFocus(function() self.testitemcount:SetSize(72) self.testitemcount:SetPosition(0,-30) end)
-		end
-	end
 end
 
 function GroundChestUI:Toggle()
@@ -291,6 +252,33 @@ function GroundChestUI:HandleMouseMovement()
 	end	
 end
 
+function GroundChestUI:IsQueued(prefab,skin)
+	local is_global_queue,is_skin_queue
+	for k,info in pairs(self.queue_conditions) do
+		if info.prefab == prefab then
+			is_global_queue = true
+		end
+		if info.prefab == prefab and info.skin == skin then
+			is_skin_queue = true
+		end
+	end
+	return is_global_queue,is_skin_queue
+end
+
+function GroundChestUI:ToggleQueueCondition(prefab,skin)
+	local was_condition
+	for k,info in pairs(self.queue_conditions) do
+		if info.prefab == prefab and info.skin == skin then
+			table.remove(self.queue_conditions,k)
+			was_condition = true
+			break
+		end
+	end
+	if not was_condition then
+		table.insert(self.queue_conditions,#self.queue_conditions+1,{prefab = prefab, skin = skin})
+	end
+end
+
 function GroundChestUI:UpdateTiles()
 	for num,tile in pairs(self.tiles) do
 		local entity = self.item_list[num+50*(self.page-1)] or {} -- 50 is the current number of items supported per page.
@@ -303,8 +291,27 @@ function GroundChestUI:UpdateTiles()
 		local tex = skin and skin..".tex" or prefab and prefab..".tex" or nil
 --		local tex = prefab and prefab..".tex" or nil
 		local atlas = tex and GetInventoryItemAtlas(tex) or nil
+
+		--Issue with queue coloring: Items that seperate into skins won't get coloured if the selected queued item was their combined part.
+		local global_queue,skin_queue = self:IsQueued(prefab,skin)
+		tile:SetQueue(false,true)
+		if self.searchtext ~= "" then -- Items get seperated by their skins while searching, that means highlighting should also change to be based on skin.
+			tile:SetGlobalHighlight(false)
+			tile:SetQueue(skin_queue,true)
+		else -- If the string is empty, then items aren't seperated into skins and highlight should highlight all of that item with no respect to the skin.
+			tile:SetGlobalHighlight(true)
+			tile:SetQueue(global_queue or skin_queue,true)
+		end
+
+		tile:SetOnClickFn(function()
+			if tile:HasItem() then 
+				tile:ToggleQueue() 
+				self:ToggleQueueCondition(prefab,skin)
+			end 
+		end)
+	
 		if prefab then
-			tile:SetItem(prefab,atlas,tex)
+			tile:SetItem(prefab,atlas,tex,skin ~= nil)
 			if amount then
 				tile:SetText(amount > 1 and amount or nil, nil)
 			elseif durability then
@@ -319,7 +326,7 @@ end
 
 function GroundChestUI:RefreshList()
 	local x,y,z = ThePlayer.Transform:GetWorldPosition()
-	self.data_list = self.GenerateItemList({x = x, y = y, z = z},30)
+	self.data_list = self.GenerateItemList({x = x, y = y, z = z},80)
 	print("list refreshed", #self.data_list)
 	self:UpdateList()
 end
