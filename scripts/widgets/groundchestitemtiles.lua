@@ -109,13 +109,13 @@ function GroundItemTile:SetQueue(queue,visual)
 		self.item_bg:SetTextures("images/quagmire_recipebook.xml","recipe_known.tex")
 		self.queued = true
 		if not visual then
-			ThePlayer.components.groundchestpickupqueuer:AddToQueue(self.item,build,isheld_shift,self.skinned)
+			ThePlayer.components.groundchestpickupqueuer:AddToQueue(self.item,build,isheld_shift,self.skinned,self.global_highlight)
 		end
 	else
 		self.item_bg:SetTextures(self.bg.atlas,self.bg.tex)
 		self.queued = false
 		if not visual then
-			ThePlayer.components.groundchestpickupqueuer:RemoveFromQueue(self.item,build,self.skinned)
+			ThePlayer.components.groundchestpickupqueuer:RemoveFromQueue(self.item,build,self.skinned,self.global_highlight)
 		end
 	end
 end

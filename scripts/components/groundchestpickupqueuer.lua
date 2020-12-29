@@ -21,13 +21,14 @@ function GroundChestPickupQueuer:CheckItemValid(item)
     return item and item:IsValid() and not item:HasTag("INLIMBO")
 end
 
-function GroundChestPickupQueuer:GetItemList(prefab,build,all,skinned)
+function GroundChestPickupQueuer:GetItemList(prefab,build,all,skinned,non_defaults)
     local pos = self.owner:GetPosition()
     local ent_list = TheSim:FindEntities(pos.x,0,pos.z,80,{"_inventoryitem"}, {"FX", "NOCLICK", "DECOR", "INLIMBO"})
     local valid_ents = {}
     local empty = true
     for k,ent in pairs(ent_list) do
-        if ent.prefab == prefab and ((not skinned) or (ent.AnimState and ent.AnimState:GetBuild() == build)) and not ent:IsOnOcean() then
+        local ent_build = ent.AnimState and ent.AnimState:GetBuild()
+        if ent.prefab == prefab and ((not skinned) and (non_defaults or not string.match(ent_build,build.."_")) or (ent_build == build)) and not ent:IsOnOcean() then
             table.insert(valid_ents,#valid_ents+1,ent)
             empty = false
             if not all then
@@ -38,10 +39,10 @@ function GroundChestPickupQueuer:GetItemList(prefab,build,all,skinned)
     return valid_ents,empty
 end
 
-function GroundChestPickupQueuer:AddToQueue(prefab,build,all,skinned)
-    local ent_list,empty = self:GetItemList(prefab,build,all,skinned)
+function GroundChestPickupQueuer:AddToQueue(prefab,build,all,skinned,non_defaults)
+    local ent_list,empty = self:GetItemList(prefab,build,all,skinned,non_defaults)
     if empty then return nil end
-    self.queue[#self.queue+1] = {list = ent_list, prefab = prefab, build = build, skinned = skinned, all = all}
+    self.queue[#self.queue+1] = {list = ent_list, prefab = prefab, build = build, skinned = skinned, all = all, non_defaults = non_defaults}
     if not self.owner[thread_name] then self:Start() end
 end
 
