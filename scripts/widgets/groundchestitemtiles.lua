@@ -7,10 +7,11 @@ local UIAnimButton = require "widgets/uianimbutton"
 
 
 --GroundItemTile Class: Holds some item information, widget clickable for some other functionality.
-local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
+local GroundItemTile = Class(Widget,function(self,item,name,bg,atlas,tex,count)
 	Widget._ctor(self,"GroundItemTile")
 
 	self.item = item -- Item prefab
+	self.name = name
 	self.atlas = atlas or "images/quagmire_recipebook.xml" -- Item atlas
 	self.tex = tex or "coin_unknown.tex"--Item tex
 	self.count = count
@@ -57,11 +58,14 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 
 	self.item_bg:Show()
 
+	-- For your Salty Meatballs
+	self.item_display_bg = self.item_bg:AddChild(ImageButton())
+	self.item_display_bg:SetScale(2,2,2)
+
 	self.item_display = self.item_bg:AddChild(ImageButton(self.atlas,self.tex))
-	--The settings of scaling, colours, etc. should move over from "self.item_bg" as "self.item_display" is the child.
-
+	self.item_display.item_bg = self.item_display_bg
+	-- The settings of scaling, colours, etc. should move over from "self.item_bg" as "self.item_display" is the child.
 	self.item_display:SetScale(2,2,2) -- The item is rather small compared to the tile itself.
-
 
 	self.text_upper = self.item_bg:AddChild(Text(NUMBERFONT,64))
 	self.text_upper:SetPosition(4,32) -- Default position for the available amount of that item
@@ -70,13 +74,16 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 --	self.count_text:SetPosition(0,16) --Default position for an item that's in an "inventory slot"s.
 
 	self.item_bg:SetOnGainFocus(function() self.text_upper:SetScale(focus_scl) self.text_lower:SetScale(focus_scl) end)
-	self.item_bg:SetOnLoseFocus(function() self.text_upper:SetScale(1) self.text_lower:SetScale(1) end)
+	self.item_bg:SetOnLoseFocus(function() self.text_upper:SetScale(1)         self.text_lower:SetScale(1)         end)
 
 --	self:SetStackText(self.count)
 	if not item then self:RemoveItem() end
 
-	self.item_display:SetOnGainFocus(function() self:HighlightSelf(true) end)
+	self.item_display:SetOnGainFocus(function() self:HighlightSelf(true)  end)
 	self.item_display:SetOnLoseFocus(function() self:HighlightSelf(false) end)
+	self.item_display:SetHoverText(name)
+--	self.item_display_bg:SetOnGainFocus(function() self:HighlightSelf(true) end)
+--	self.item_display_bg:SetOnLoseFocus(function() self:HighlightSelf(false) end)
 
 	self:SetScale(self.widget_scale)
 	self:Show()
@@ -131,23 +138,35 @@ function GroundItemTile:RemoveItem()
 	self.chestslot = nil
 	self.item_display:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
 	self.item_display:Hide()
+	self.item_display_bg:Hide()
 	self:SetQueue(false)
 	self:SetText(nil)
 	self:StopUpdating()
 end
 
-function GroundItemTile:SetItem(item,atlas,tex,skinned,container,slot)
-	if (self.item == item and self.atlas == atlas and self.tex == tex) then return end
+function GroundItemTile:SetItem(item,name,atlas,tex,skinned,bg_atlas,bg_tex,container,slot)
+	if (self.item == item and self.atlas == atlas and self.tex == tex and self.bg_atlas == atlas and self.bg_tex == tex) then return end
 	self.item = item
+	self.name = name
 	self.atlas = atlas
 	self.tex = tex
+	self.bg_atlas = bg_atlas
+	self.bg_tex = bg_tex
 	self.skinned = skinned
 	self.chestitem = container ~= nil
 	self.container = container
 	self.chestslot = slot
 	self.item_display:SetTextures(atlas,tex)
 	self.item_display:Show()
-	self.item_display:SetHoverText(item and STRINGS.NAMES[string.upper(item)] or "")
+	self.item_display:SetHoverText(name)
+	if bg_atlas then
+		print(item,name,atlas,tex,bg_atlas,bg_tex)
+		self.item_display_bg:SetTextures(bg_atlas,bg_tex)
+		self.item_display_bg:Show()
+	else
+		self.item_display_bg:Hide()
+	end
+--	self.item_display:SetHoverText(item and STRINGS.NAMES[string.upper(item)] or "")
 	--self:StartUpdating()--Currently no reason to be updating.
 end
 

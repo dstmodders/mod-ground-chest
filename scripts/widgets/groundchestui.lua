@@ -173,7 +173,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	local y_range = 5
 	for x = 1,x_range do
 		for y = 1,y_range do
-			local tile = self.bg:AddChild(GroundChestItemTiles(nil,self.itembg))
+			local tile = self.bg:AddChild(GroundChestItemTiles(nil,nil,self.itembg))
 			self.tiles[x_range*(y-1)+x] = tile
 
 			local min_vx = -8 -- Min distance it has to be from the vertical edges
@@ -288,9 +288,18 @@ function GroundChestUI:UpdateTiles()
 		local durability = entity.durability
 		local skin   = entity.skin
 
-		local tex = skin and skin..".tex" or prefab and prefab..".tex" or nil
+		local tex = skin and GetInventoryItemAtlas(skin..".tex",true) and skin..".tex" or entity.tex or prefab and prefab..".tex"
+		local atlas = tex and GetInventoryItemAtlas(tex,true) or nil
+--		print(atlas, tex)
+		if tex == nil or atlas == nil then
+			tex = "cookbook_known.tex"
+			atlas = "images/quagmire_recipebook.xml"
+		end
+--		local tex = entity.tex or skin and skin..".tex" or prefab and prefab..".tex" or nil
 --		local tex = prefab and prefab..".tex" or nil
-		local atlas = tex and GetInventoryItemAtlas(tex) or nil
+
+		local bg_tex = entity.bg_tex
+		local bg_atlas = entity.bg_atlas
 
 		--Issue with queue coloring: Items that seperate into skins won't get coloured if the selected queued item was their combined part.
 		local global_queue,skin_queue = self:IsQueued(prefab,skin)
@@ -311,7 +320,7 @@ function GroundChestUI:UpdateTiles()
 		end)
 	
 		if prefab then
-			tile:SetItem(prefab,atlas,tex,skin ~= nil)
+			tile:SetItem(prefab,name,atlas,tex,skin ~= nil,bg_atlas,bg_tex)
 			if amount then
 				tile:SetText(amount > 1 and amount or nil, nil)
 			elseif durability then
