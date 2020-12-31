@@ -1,4 +1,4 @@
-local check_delay = 0.1
+local check_delay = 1/30 -- Lower check delay makes it feel more responsive.
 local thread_name = "mod_groundchestpickupqueuer_thread"
 
 local GroundChestPickupQueuer = Class(function(self,inst)
@@ -28,7 +28,7 @@ function GroundChestPickupQueuer:GetItemList(prefab,build,all,skinned,non_defaul
     local empty = true
     for k,ent in pairs(ent_list) do
         local ent_build = ent.AnimState and ent.AnimState:GetBuild()
-        if ent.prefab == prefab and ((not skinned) and (non_defaults or not string.match(ent_build,build.."_")) or (ent_build == build)) and not ent:IsOnOcean() then
+        if ent.prefab == prefab and ((not skinned) and (non_defaults or STRINGS.SKIN_NAMES[ent_build] == nil) or (ent_build == build)) and not ent:IsOnOcean() then
             table.insert(valid_ents,#valid_ents+1,ent)
             empty = false
             if not all then
