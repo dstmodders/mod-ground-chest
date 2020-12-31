@@ -61,6 +61,11 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 	--The settings of scaling, colours, etc. should move over from "self.item_bg" as "self.item_display" is the child.
 
 	self.item_display:SetScale(2,2,2) -- The item is rather small compared to the tile itself.
+	
+	self.item_display_bg = self.item_display:AddChild(ImageButton()) -- This will usually be hidden.
+	-- self.item_display_bg can be visible when there's a special background(Spiced food, known freshness, etc.)
+	self.item_display_bg:SetScale(1,1,1)
+	self.item_display_bg:Hide()
 
 
 	self.text_upper = self.item_bg:AddChild(Text(NUMBERFONT,64))
@@ -131,23 +136,56 @@ function GroundItemTile:RemoveItem()
 	self.chestslot = nil
 	self.item_display:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
 	self.item_display:Hide()
+	self.item_display_bg:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex") -- A "debug" texture
+	self.item_display_bg:SetPosition(-4,-32)
+	self.item_display_bg:Hide()
 	self:SetQueue(false)
 	self:SetText(nil)
-	self:StopUpdating()
+--	self:StopUpdating()
+end
+
+function GroundItemTile:CheckForSpicedFood()
+	if not self.item then -- item display background shouldn't be visible
+		self.item_display_bg:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
+		self.item_display_bg:SetPosition(-4,-32)
+		self.item_display_bg:Hide()
+		return nil
+	end
+	local spiced_food = string.match(self.item,"%w+_spice_%w+")
+	if spiced_food then -- Time to use the item display background
+		local spice = string.sub(string.match(self.item,"_spice_%w+"),8,-1)
+		local food = string.sub(string.match(self.item,"%w+_spice"),1,-7)
+		local spice_tex = "spice_"..spice.."_over.tex"
+		local spice_atlas = GetInventoryItemAtlas(spice_tex)
+		self.tex = food..".tex"
+		self.atlas = GetInventoryItemAtlas(self.tex)
+		self.item_display_bg:SetTextures(spice_atlas,spice_tex)
+		self.item_display_bg:SetPosition(0,0)
+		self.item_display_bg:MoveToFront()
+		self.item_display_bg:Show()
+		local spiced_name = string.sub(STRINGS.NAMES["SPICE_"..string.upper(spice).."_FOOD"],1,-7)..STRINGS.NAMES[string.upper(food)]
+		return spiced_name
+	else
+		self.item_display_bg:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
+		self.item_display_bg:SetPosition(-4,-32)
+		self.item_display_bg:Hide()
+	end
 end
 
 function GroundItemTile:SetItem(item,atlas,tex,skinned,container,slot)
 	if (self.item == item and self.atlas == atlas and self.tex == tex) then return end
+	self:RemoveItem()
 	self.item = item
-	self.atlas = atlas
-	self.tex = tex
+	self.atlas = atlas or "images/quagmire_recipebook.xml"
+	self.tex = tex or "coin_unknown.tex"
+	local name = self:CheckForSpicedFood()
 	self.skinned = skinned
 	self.chestitem = container ~= nil
 	self.container = container
 	self.chestslot = slot
-	self.item_display:SetTextures(atlas,tex)
+	self.item_display:SetTextures(self.atlas,self.tex)
 	self.item_display:Show()
-	self.item_display:SetHoverText(item and STRINGS.NAMES[string.upper(item)] or "")
+	self.item_display:SetHoverText(name or (item and STRINGS.NAMES[string.upper(item)]) or "")
 	--self:StartUpdating()--Currently no reason to be updating.
 end
 
@@ -166,7 +204,7 @@ function GroundItemTile:GetSelfItemList()
 	local ent_list = TheSim:FindEntities(pos.x,0,pos.z,80,{"_inventoryitem"}, {"FX", "NOCLICK", "DECOR"})
 	local valid_ent_list = {}
 	for k,ent in pairs(ent_list) do
-		if ent.prefab == self.item and (self.global_highlight or IsMatchingTex(ent,self.tex)) then
+		if ent.prefab == self.item and (self.global_highlight or IsMatchingTex(ent,self.tex) or string.match(self.item,"%w+_spice_%w+")) then
 			table.insert(valid_ent_list,#valid_ent_list+1,ent)
 		end
 	end

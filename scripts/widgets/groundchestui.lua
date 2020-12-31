@@ -290,7 +290,7 @@ function GroundChestUI:UpdateTiles()
 
 		local tex = skin and skin..".tex" or prefab and prefab..".tex" or nil
 --		local tex = prefab and prefab..".tex" or nil
-		local atlas = tex and GetInventoryItemAtlas(tex) or nil
+		local atlas = tex and GetInventoryItemAtlas(tex,true) or nil
 
 		--Issue with queue coloring: Items that seperate into skins won't get coloured if the selected queued item was their combined part.
 		local global_queue,skin_queue = self:IsQueued(prefab,skin)

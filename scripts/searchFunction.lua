@@ -26,7 +26,7 @@ local function GenerateItemList(pos, distance)
 				result[num] = {}
 				result[num].groups = {}
 				result[num].prefab = prefab
-				result[num].name   = obj.name
+				result[num].name   = obj:GetBasicDisplayName()
 				result[num].durability = obj.components.finiteuses ~= nil
 				if obj.replica.stackable then
 					result[num].amount = obj.replica.stackable:StackSize() or 0
