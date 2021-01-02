@@ -4,7 +4,7 @@ local Image = require "widgets/image"
 local ImageButton = require "widgets/imagebutton"
 local UIAnim = require "widgets/uianim"
 local UIAnimButton = require "widgets/uianimbutton"
-
+local GetTrueSkinName = require "searchFunction".GetTrueSkinName
 
 --GroundItemTile Class: Holds some item information, widget clickable for some other functionality.
 local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
@@ -62,6 +62,12 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 
 	self.item_display:SetScale(2,2,2) -- The item is rather small compared to the tile itself.
 	
+	local anim_item_scl = 0.65
+	self.anim_item = self.item_bg:AddChild(UIAnim())
+	self.anim_item:SetScale(anim_item_scl,anim_item_scl,anim_item_scl)
+	self.anim_item:SetPosition(-3,-30)
+	self.anim_item:Hide()
+	
 	self.item_display_bg = self.item_display:AddChild(ImageButton()) -- This will usually be hidden.
 	-- self.item_display_bg can be visible when there's a special background(Spiced food, known freshness, etc.)
 	self.item_display_bg:SetScale(1,1,1)
@@ -82,7 +88,8 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 
 	self.item_display:SetOnGainFocus(function() self:HighlightSelf(true) end)
 	self.item_display:SetOnLoseFocus(function() self:HighlightSelf(false) end)
-
+	self.anim_item:SetOnGainFocus(function() self.anim_item:SetScale(focus_scl*anim_item_scl)  self:HighlightSelf(true) end)
+	self.anim_item:SetOnLoseFocus(function() self.anim_item:SetScale(normal_scl*anim_item_scl) self:HighlightSelf(false) end)
 	self:SetScale(self.widget_scale)
 	self:Show()
 	--self:StartUpdating() -- Currently no reason to be updating.
@@ -112,12 +119,19 @@ function GroundItemTile:SetQueue(queue,visual)
 	end
 	if queue then
 		self.item_bg:SetTextures("images/quagmire_recipebook.xml","recipe_known.tex")
+		if isheld_shift then
+			local shifted_colour = {1,1,0,1}
+			self.item_bg:SetImageNormalColour(unpack(shifted_colour))
+			self.item_bg:SetImageFocusColour(unpack(shifted_colour))
+		end
 		self.queued = true
 		if not visual then
 			ThePlayer.components.groundchestpickupqueuer:AddToQueue(self.item,build,isheld_shift,self.skinned,self.global_highlight)
 		end
 	else
 		self.item_bg:SetTextures(self.bg.atlas,self.bg.tex)
+		self.item_bg:SetImageNormalColour(1,1,1,1)
+		self.item_bg:SetImageFocusColour(1,1,1,1)
 		self.queued = false
 		if not visual then
 			ThePlayer.components.groundchestpickupqueuer:RemoveFromQueue(self.item,build,self.skinned,self.global_highlight)
@@ -136,6 +150,7 @@ function GroundItemTile:RemoveItem()
 	self.chestslot = nil
 	self.item_display:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
 	self.item_display:Hide()
+	self.anim_item:Hide()
 	self.item_display_bg:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex") -- A "debug" texture
 	self.item_display_bg:SetPosition(-4,-32)
 	self.item_display_bg:Hide()
@@ -175,6 +190,7 @@ end
 function GroundItemTile:SetItem(item,atlas,tex,skinned,container,slot)
 	if (self.item == item and self.atlas == atlas and self.tex == tex) then return end
 	self:RemoveItem()
+	self.anim_item:Hide()
 	self.item = item
 	self.atlas = atlas or "images/quagmire_recipebook.xml"
 	self.tex = tex or "coin_unknown.tex"
@@ -189,10 +205,26 @@ function GroundItemTile:SetItem(item,atlas,tex,skinned,container,slot)
 	--self:StartUpdating()--Currently no reason to be updating.
 end
 
-local function IsMatchingTex(entity,tex)
+function GroundItemTile:SetAnimItem(item,tex,anim_package)
+	local bank,build,anim = unpack(anim_package or {})
+	if bank and build and anim then
+		self:RemoveItem()
+		self.item = item
+		self.tex = tex
+--		print(bank,build,anim,self.item,self.tex)
+		local AnimState = self.anim_item:GetAnimState()
+		AnimState:SetBank(bank)
+		AnimState:SetBuild(build)
+		AnimState:PlayAnimation(anim,true)
+		self.anim_item:Show()
+		self.anim_item:SetHoverText(item and STRINGS.NAMES[string.upper(item)] or "")
+	end
+end
+
+local function IsMatchingTex(entity,tex,prefab)
 	local entity_skin = entity.AnimState and STRINGS.SKIN_NAMES[entity.AnimState:GetBuild()] and entity.AnimState:GetBuild()
 	local entity_tex = entity_skin and entity_skin..".tex" or entity.prefab..".tex"
-	if entity_tex == tex then
+	if entity_tex == tex or GetTrueSkinName(entity_skin,prefab)..".tex" == tex then
 		return true
 	end
 	return false
@@ -204,7 +236,7 @@ function GroundItemTile:GetSelfItemList()
 	local ent_list = TheSim:FindEntities(pos.x,0,pos.z,80,{"_inventoryitem"}, {"FX", "NOCLICK", "DECOR"})
 	local valid_ent_list = {}
 	for k,ent in pairs(ent_list) do
-		if ent.prefab == self.item and (self.global_highlight or IsMatchingTex(ent,self.tex) or string.match(self.item,"%w+_spice_%w+")) then
+		if ent.prefab == self.item and (self.global_highlight or IsMatchingTex(ent,self.tex,self.item) or string.match(self.item,"%w+_spice_%w+")) then
 			table.insert(valid_ent_list,#valid_ent_list+1,ent)
 		end
 	end

@@ -279,6 +279,8 @@ function GroundChestUI:ToggleQueueCondition(prefab,skin)
 	end
 end
 
+local GetTrueSkinName = searchFunction.GetTrueSkinName
+
 function GroundChestUI:UpdateTiles()
 	for num,tile in pairs(self.tiles) do
 		local entity = self.item_list[num+50*(self.page-1)] or {} -- 50 is the current number of items supported per page.
@@ -287,11 +289,17 @@ function GroundChestUI:UpdateTiles()
 		local amount = entity.amount
 		local durability = entity.durability
 		local skin   = entity.skin
+		local AnimState = entity.AnimState
 
 		local tex = skin and skin..".tex" or prefab and prefab..".tex" or nil
 --		local tex = prefab and prefab..".tex" or nil
 		local atlas = tex and GetInventoryItemAtlas(tex,true) or nil
-
+	
+		if not atlas and skin then
+			skin = GetTrueSkinName(skin,prefab)
+			tex = skin..".tex"
+			atlas = GetInventoryItemAtlas(tex,true)
+		end
 		--Issue with queue coloring: Items that seperate into skins won't get coloured if the selected queued item was their combined part.
 		local global_queue,skin_queue = self:IsQueued(prefab,skin)
 		tile:SetQueue(false,true)
@@ -311,7 +319,11 @@ function GroundChestUI:UpdateTiles()
 		end)
 	
 		if prefab then
-			tile:SetItem(prefab,atlas,tex,skin ~= nil)
+			if atlas or string.match(prefab,"%w+_spice_%w+") then
+				tile:SetItem(prefab,atlas,tex,skin ~= nil)
+			else
+				tile:SetAnimItem(prefab,tex,AnimState)
+			end
 			if amount then
 				tile:SetText(amount > 1 and amount or nil, nil)
 			elseif durability then

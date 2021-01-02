@@ -4,6 +4,26 @@ local function GetSkin(obj)
 	return STRINGS.SKIN_NAMES[skin] and skin or nil
 end
 
+local function GetTrueSkinName(build,prefab)
+	--TODO: Check if skin exists, apply alternative method if it doesn't.
+	if (not build) or (not prefab) or not (type(build) == "string" and type(prefab) == "string") then return "" end
+    local _,word_count = string.gsub(prefab,"%a+","")
+    local str = prefab
+    local words = {}
+    local word,Sstr,Estr
+    for i = 1,word_count do
+        Sstr,Estr = string.find(str,"%w+")
+        table.insert(words,#words+1,string.sub(str,Sstr,Estr))
+        str = string.sub(str,Estr+2,-1)
+    end
+    local skin = build
+    for k,word in pairs(words) do
+        skin = string.gsub(skin,word,"")
+        skin = string.gsub(skin,"__","_")
+    end
+    return prefab..skin
+end
+
 local function GenerateItemList(pos, distance)
 	local platform = TheWorld.Map:GetPlatformAtPoint(pos.x, pos.z)
 	local entities = TheSim:FindEntities(pos.x, pos.y, pos.z, distance, {"_inventoryitem"}, {"FX", "NOCLICK", "DECOR", "INLIMBO", "catchable", "mineactive", "intense"})
@@ -25,6 +45,8 @@ local function GenerateItemList(pos, distance)
 			if not prefabToNum[prefab] then
 				result[num] = {}
 				result[num].groups = {}
+				result[num].animstates = {}
+				result[num].AnimState = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
 				result[num].prefab = prefab
 				result[num].name   = obj:GetBasicDisplayName()
 				result[num].durability = obj.components.finiteuses ~= nil
@@ -37,6 +59,7 @@ local function GenerateItemList(pos, distance)
 					result[num].groups[#result[num].groups + 1] = obj
 				else
 					result[num].groups[GetSkin(obj) or "none"] = result[num].amount
+					result[num].animstates[GetSkin(obj) or "none"] = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
 				end
 				prefabToNum[prefab] = num
 				num = num+1
@@ -49,6 +72,7 @@ local function GenerateItemList(pos, distance)
 				else
 					local skin = GetSkin(obj) or "none"
 					result[num].groups[skin] = (result[num].groups[skin] or 0) + amount
+					result[num].animstates[skin] = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
 				end
 			end
 		end
@@ -96,6 +120,7 @@ local function FetchItemList(datalist, matchingText)
 						result[num].prefab = prefab
 						result[num].amount = v
 						result[num].skin   = k ~= "none" and k or nil
+						result[num].AnimState = datalist[i].animstates[k or "none"]
 						num = num + 1
 					end
 				end
@@ -103,6 +128,7 @@ local function FetchItemList(datalist, matchingText)
 				result[num] = {}
 				result[num].name   = datalist[i].name
 				result[num].prefab = datalist[i].prefab
+				result[num].AnimState = datalist[i].AnimState
 				result[num].amount = datalist[i].amount
 				num = num + 1
 			end
@@ -113,4 +139,6 @@ local function FetchItemList(datalist, matchingText)
 end
 
 return {GenerateItemList = GenerateItemList,
-	FetchItemList = FetchItemList}
+	FetchItemList = FetchItemList,
+	GetTrueSkinName = GetTrueSkinName,
+	}
