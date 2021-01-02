@@ -4,8 +4,18 @@ local function GetSkin(obj)
 	return STRINGS.SKIN_NAMES[skin] and skin or nil
 end
 
-local function GetTrueSkinName(build,prefab)
-	--TODO: Check if skin exists, apply alternative method if it doesn't.
+local function GetTrueSkinName(build,prefab,method)
+	local function ApplyMethods()
+		local methods = {"_item","_drawn"}
+		local result
+		for k,v in pairs(methods) do
+			result = GetTrueSkinName(build,prefab,v)
+			if result and result ~= "" then
+				return result
+			end
+		end
+		return ""
+	end
 	if (not build) or (not prefab) or not (type(build) == "string" and type(prefab) == "string") then return "" end
     local _,word_count = string.gsub(prefab,"%a+","")
     local str = prefab
@@ -21,7 +31,20 @@ local function GetTrueSkinName(build,prefab)
         skin = string.gsub(skin,word,"")
         skin = string.gsub(skin,"__","_")
     end
-    return prefab..skin
+	local possible_skin_name
+	if not method then
+		possible_skin_name = prefab..skin
+	elseif method then
+		possible_skin_name = string.gsub(prefab,method,"")..skin..method
+	end
+	
+	if possible_skin_name and GetInventoryItemAtlas(possible_skin_name..".tex",true) then
+		return possible_skin_name
+	elseif not method then
+		return ApplyMethods()
+	else
+		return ""
+	end
 end
 
 local function GenerateItemList(pos, distance)
