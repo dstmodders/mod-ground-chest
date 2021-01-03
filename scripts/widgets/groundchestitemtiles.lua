@@ -236,7 +236,7 @@ function GroundItemTile:GetSelfItemList()
 	local ent_list = TheSim:FindEntities(pos.x,0,pos.z,80,{"_inventoryitem"}, {"FX", "NOCLICK", "DECOR"})
 	local valid_ent_list = {}
 	for k,ent in pairs(ent_list) do
-		if ent.prefab == self.item and (self.global_highlight or IsMatchingTex(ent,self.tex,self.item) or string.match(self.item,"%w+_spice_%w+")) then
+		if ent.prefab == self.item and (self.global_highlight or IsMatchingTex(ent,self.tex,self.item) or string.match(self.item,"%w+_spice_%w+") or string.match(self.tex,"quagmire")) then
 			table.insert(valid_ent_list,#valid_ent_list+1,ent)
 		end
 	end

@@ -8,6 +8,7 @@ local GroundChestItemTiles = require "widgets/groundchestitemtiles"
 local searchFunction = require "searchFunction"
 local GroundChestUIScreen = require "screens/groundchestuiscreen"
 local TEMPLATES = require "widgets/redux/templates"
+local PLANT_DEFS = require("prefabs/farm_plant_defs").PLANT_DEFS
 
 local screen_x, screen_y,half_x,half_y,w,h
 
@@ -294,11 +295,24 @@ function GroundChestUI:UpdateTiles()
 		local tex = skin and skin..".tex" or prefab and prefab..".tex" or nil
 --		local tex = prefab and prefab..".tex" or nil
 		local atlas = tex and GetInventoryItemAtlas(tex,true) or nil
-	
+		
+		local real_prefab = string.gsub(prefab or "","_cooked","")
 		if not atlas and skin then
 			skin = GetTrueSkinName(skin,prefab)
 			tex = skin..".tex"
 			atlas = GetInventoryItemAtlas(tex,true)
+		elseif (not atlas or PLANT_DEFS[real_prefab]) and (not skin) and prefab then
+			for k,asset_list in pairs(Prefabs[prefab] and Prefabs[prefab].assets or {}) do
+				for name,asset in pairs(asset_list) do
+					if asset == "INV_IMAGE" then
+						tex = asset_list.file..".tex"
+						atlas = GetInventoryItemAtlas(tex,true)
+						if (not PLANT_DEFS[real_prefab]) or (PLANT_DEFS[real_prefab] and string.match(asset_list.file,"quagmire")) then
+							break
+						end
+					end
+				end
+			end
 		end
 		--Issue with queue coloring: Items that seperate into skins won't get coloured if the selected queued item was their combined part.
 		local global_queue,skin_queue = self:IsQueued(prefab,skin)
