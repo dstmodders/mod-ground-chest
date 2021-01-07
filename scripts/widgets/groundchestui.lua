@@ -22,8 +22,8 @@ local items_page = 50--10x wide and 5x tall seems balanced to both see the item 
 local on_button_press_fn
 
 local function LoadConfig(name)
-    local mod = "Ground Chest"
-    return GetModConfigData(name,mod) or GetModConfigData(name,KnownModIndex:GetModActualName(mod))
+	local mod = "Ground Chest"
+	return GetModConfigData(name,mod) or GetModConfigData(name,KnownModIndex:GetModActualName(mod))
 end
 
 
@@ -214,14 +214,28 @@ end
 
 function GroundChestUI:Toggle()
 	if self.shown then
-		self.shown = false
-		self:Hide()
+		if not TheInput:IsKeyDown(KEY_SHIFT) then
+			self.shown = false
+			self:Hide()
+		end
 	else
 		self.shown = true
+		self.page = 1
 		self:ClearSearchbox()
-		self:RefreshList() -- Opening up the UI should give you new info without the need to press the "Refresh" button.
---		self:UpdateTiles()
+		self:RefreshList()
 		self:Show()
+	end
+	if TheInput:IsKeyDown(KEY_SHIFT) then
+		local item = ThePlayer.replica.inventory:GetActiveItem()
+		if item then
+			local name = item and item.prefab and STRINGS.NAMES[string.upper(item.prefab)]
+			if name then
+				self.searchbox:SetString(name)
+				self.searchbox:OnTextInputted()
+			end
+		else
+			self.searchbox:OnMouseButton()
+		end
 	end
 end
 
