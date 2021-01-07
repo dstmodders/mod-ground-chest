@@ -112,6 +112,7 @@ function GroundItemTile:ToggleQueue()
 end
 
 function GroundItemTile:SetQueue(queue,visual)
+	if self:GetPingKeysPressed() then return nil end
 	local build
 	local isheld_shift = TheInput:IsKeyDown(KEY_SHIFT)
 	if self.tex then
@@ -136,6 +137,34 @@ function GroundItemTile:SetQueue(queue,visual)
 		if not visual then
 			ThePlayer.components.groundchestpickupqueuer:RemoveFromQueue(self.item,build,self.skinned,self.global_highlight)
 		end
+	end
+end
+
+function GroundItemTile:GetPingKeysPressed()
+	return TheInput:IsControlPressed(CONTROL_FORCE_INSPECT) and TheInput:IsKeyDown(KEY_LSHIFT)
+end
+
+function GroundItemTile:Ping()
+	if not self:GetPingKeysPressed() then return nil end
+	local whisper = TheInput:IsKeyDown(KEY_CTRL)
+	if self:HasItem() then
+		local vowels = {"a","e","i","o","u"}
+		local item_name = not self.skinned and self.hover_text or STRINGS.SKIN_NAMES[string.sub(self.tex,1,-5)]
+		local item_name_many = item_name.."s"
+		local item_count = self.text_upper:GetString()
+		local message = STRINGS.LMB.." "
+		local a_an = "a"
+		for k,v in pairs(vowels) do 
+			if string.lower(string.match(item_name,"%a") or "") == v then
+				a_an = "an"
+			end
+		end
+		if item_count == "1"  or item_count == "" then
+			message = message.."There is "..a_an.." "..item_name.." in the area."
+		else
+			message = message.."There are "..item_count.." "..item_name_many.." in the area."
+		end
+		TheNet:Say(message, whisper)
 	end
 end
 
@@ -202,6 +231,7 @@ function GroundItemTile:SetItem(item,atlas,tex,skinned,container,slot)
 	self.item_display:SetTextures(self.atlas,self.tex)
 	self.item_display:Show()
 	self.item_display:SetHoverText(name or (item and STRINGS.NAMES[string.upper(item)]) or "")
+	self.hover_text = name or (item and STRINGS.NAMES[string.upper(item)]) or ""
 	--self:StartUpdating()--Currently no reason to be updating.
 end
 

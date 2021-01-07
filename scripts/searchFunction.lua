@@ -68,8 +68,8 @@ local function GenerateItemList(pos, distance)
 			if not prefabToNum[prefab] then
 				result[num] = {}
 				result[num].groups = {}
-				result[num].animstates = {}
-				result[num].AnimState = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
+--				result[num].animstates = {}
+--				result[num].AnimState = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
 				result[num].prefab = prefab
 				result[num].name   = obj:GetBasicDisplayName()
 				result[num].durability = obj.components.finiteuses ~= nil
@@ -82,7 +82,7 @@ local function GenerateItemList(pos, distance)
 					result[num].groups[#result[num].groups + 1] = obj
 				else
 					result[num].groups[GetSkin(obj) or "none"] = result[num].amount
-					result[num].animstates[GetSkin(obj) or "none"] = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
+--					result[num].animstates[GetSkin(obj) or "none"] = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
 				end
 				prefabToNum[prefab] = num
 				num = num+1
@@ -95,7 +95,7 @@ local function GenerateItemList(pos, distance)
 				else
 					local skin = GetSkin(obj) or "none"
 					result[num].groups[skin] = (result[num].groups[skin] or 0) + amount
-					result[num].animstates[skin] = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
+--					result[num].animstates[skin] = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
 				end
 			end
 		end
@@ -143,7 +143,7 @@ local function FetchItemList(datalist, matchingText)
 						result[num].prefab = prefab
 						result[num].amount = v
 						result[num].skin   = k ~= "none" and k or nil
-						result[num].AnimState = datalist[i].animstates[k or "none"]
+--						result[num].AnimState = datalist[i].animstates[k or "none"]
 						num = num + 1
 					end
 				end
@@ -151,7 +151,7 @@ local function FetchItemList(datalist, matchingText)
 				result[num] = {}
 				result[num].name   = datalist[i].name
 				result[num].prefab = datalist[i].prefab
-				result[num].AnimState = datalist[i].AnimState
+--				result[num].AnimState = datalist[i].AnimState
 				result[num].amount = datalist[i].amount
 				num = num + 1
 			end

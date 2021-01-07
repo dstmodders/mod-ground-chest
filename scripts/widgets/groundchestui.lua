@@ -36,9 +36,17 @@ local function InGame()
 	return ThePlayer and ThePlayer.HUD and not ThePlayer.HUD:HasInputFocus()
 end
 
---Some features:
---Clicking on an item tile: Will queue up for the item to be picked up, several tiles can be clicked at once and they will be picked up based on clicking order.
---There are several variants for the background of the item tile.
+local function CreateButtonInfoHover(self,name,text)
+	if not self then return end
+	local identifier = name.."_text"
+	self[identifier] = self[name]:AddChild(Text(BUTTONFONT,32))
+	self[identifier]:SetPosition(0,24)
+	self[identifier]:SetString(text)
+	self[identifier]:Hide()
+	
+	self[name]:SetOnGainFocus(function() self[identifier]:Show() end)
+	self[name]:SetOnLoseFocus(function() self[identifier]:Hide() end)
+end
 
 local GroundChestUI = Class(Widget,function(self,owner)
       Widget._ctor(self,"GroundChestUI")
@@ -80,15 +88,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.refreshbutton_fn = function() self:RefreshList() end
 	self.refreshbutton:SetOnClick(self.refreshbutton_fn)
 
-	self.refreshbutton_text = self.refreshbutton:AddChild(Text(BUTTONFONT,32))
-	self.refreshbutton_text:SetPosition(0,24)
-	self.refreshbutton_text:SetString("Refresh")
-	self.refreshbutton_text:Hide()
-
-	self.on_refreshbutton_gainfocus_fn = function() self.refreshbutton_text:Show() end
-	self.on_refreshbutton_losefocus_fn = function() self.refreshbutton_text:Hide() end
-	self.refreshbutton:SetOnGainFocus(self.on_refreshbutton_gainfocus_fn)
-	self.refreshbutton:SetOnLoseFocus(self.on_refreshbutton_losefocus_fn)
+	CreateButtonInfoHover(self,"refreshbutton","Refresh")
 
 	--Just gonna grab the texture names from Klei's plantspage.lua
 	local left_textures = {
@@ -112,15 +112,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.arrow_left_fn = function () self:RetreatPage() end
 	self.arrow_left:SetOnClick(self.arrow_left_fn)
 
-	self.arrow_left_text = self.arrow_left:AddChild(Text(BUTTONFONT,32))
-	self.arrow_left_text:SetPosition(0,24)
-	self.arrow_left_text:SetString("Previous Page")
-	self.arrow_left_text:Hide()
-
-	self.on_arrow_left_gainfocus_fn = function() self.arrow_left_text:Show() end
-	self.on_arrow_left_losefocus_fn = function() self.arrow_left_text:Hide() end
-	self.arrow_left:SetOnGainFocus(self.on_arrow_left_gainfocus_fn)
-	self.arrow_left:SetOnLoseFocus(self.on_arrow_left_losefocus_fn)
+	CreateButtonInfoHover(self,"arrow_left","Previous Page")
 
 	self.arrow_right = self.bg:AddChild(ImageButton("images/plantregistry.xml",right_textures.normal,right_textures.over,right_textures.disabled,right_textures.down))
 	self.arrow_right:SetPosition(self.size_x*1/7,self.size_y*7/20)
@@ -130,15 +122,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.arrow_right_fn = function() self:AdvancePage() end
 	self.arrow_right:SetOnClick(self.arrow_right_fn)
 
-	self.arrow_right_text = self.arrow_right:AddChild(Text(BUTTONFONT,32))
-	self.arrow_right_text:SetPosition(0,24)
-	self.arrow_right_text:SetString("Next Page")
-	self.arrow_right_text:Hide()
-
-	self.on_arrow_right_gainfocus_fn = function() self.arrow_right_text:Show() end
-	self.on_arrow_right_losefocus_fn = function() self.arrow_right_text:Hide() end
-	self.arrow_right:SetOnGainFocus(self.on_arrow_right_gainfocus_fn)
-	self.arrow_right:SetOnLoseFocus(self.on_arrow_right_losefocus_fn)
+	CreateButtonInfoHover(self,"arrow_right","Next Page")
 
 	self.page_text = self.bg:AddChild(Text(BUTTONFONT,32))
 	self.page_text:SetPosition(0,self.size_y*7/20)
@@ -217,10 +201,14 @@ function GroundChestUI:Toggle()
 		if not TheInput:IsKeyDown(KEY_SHIFT) then
 			self.shown = false
 			self:Hide()
+			if ThePlayer and ThePlayer.components.groundchestpickupqueuer then
+				ThePlayer.components.groundchestpickupqueuer:Stop()
+			end
 		end
 	else
 		self.shown = true
 		self.page = 1
+		self.queue_conditions = {}
 		self:ClearSearchbox()
 		self:RefreshList()
 		self:Show()
@@ -281,6 +269,7 @@ function GroundChestUI:IsQueued(prefab,skin)
 end
 
 function GroundChestUI:ToggleQueueCondition(prefab,skin)
+	if TheInput:IsControlPressed(CONTROL_FORCE_INSPECT) and TheInput:IsKeyDown(KEY_LSHIFT) then return nil end
 	local was_condition
 	for k,info in pairs(self.queue_conditions) do
 		if info.prefab == prefab and info.skin == skin then
@@ -304,7 +293,7 @@ function GroundChestUI:UpdateTiles()
 		local amount = entity.amount
 		local durability = entity.durability
 		local skin   = entity.skin
-		local AnimState = entity.AnimState
+--		local AnimState = entity.AnimState
 
 		local tex = skin and skin..".tex" or prefab and prefab..".tex" or nil
 --		local tex = prefab and prefab..".tex" or nil
@@ -343,15 +332,14 @@ function GroundChestUI:UpdateTiles()
 			if tile:HasItem() then 
 				tile:ToggleQueue() 
 				self:ToggleQueueCondition(prefab,skin)
+				tile:Ping()
 			end 
 		end)
 	
 		if prefab then
-			if atlas or string.match(prefab,"%w+_spice_%w+") then
+	--		if atlas or string.match(prefab,"%w+_spice_%w+") then
 				tile:SetItem(prefab,atlas,tex,skin ~= nil)
-			else
-				tile:SetAnimItem(prefab,tex,AnimState)
-			end
+	--			tile:SetAnimItem(prefab,tex,AnimState) -- I really dislike using the Anim Items and I much prefer seeing no-texture icon than nothing or the animation.
 			if amount then
 				tile:SetText(amount > 1 and amount or nil, nil)
 			elseif durability then
