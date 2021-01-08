@@ -65,13 +65,14 @@ local function GenerateItemList(pos, distance)
 		local obj = entities[i]
 		if obj then
 			local prefab = obj.prefab
+			local adjective = obj.displayadjectivefn and obj.displayadjectivefn().." " or ""
 			if not prefabToNum[prefab] then
 				result[num] = {}
 				result[num].groups = {}
 --				result[num].animstates = {}
 --				result[num].AnimState = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
 				result[num].prefab = prefab
-				result[num].name   = obj:GetBasicDisplayName()
+				result[num].name   = adjective..obj:GetBasicDisplayName()
 				result[num].durability = obj.components.finiteuses ~= nil
 				if obj.replica.stackable then
 					result[num].amount = obj.replica.stackable:StackSize() or 0

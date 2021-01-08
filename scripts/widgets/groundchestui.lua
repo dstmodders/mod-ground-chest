@@ -306,7 +306,7 @@ function GroundChestUI:UpdateTiles()
 			atlas = GetInventoryItemAtlas(tex,true)
 		elseif (not atlas or PLANT_DEFS[real_prefab]) and (not skin) and prefab then
 			for k,asset_list in pairs(Prefabs[prefab] and Prefabs[prefab].assets or {}) do
-				for name,asset in pairs(asset_list) do
+				for _,asset in pairs(asset_list) do
 					if asset == "INV_IMAGE" then
 						tex = asset_list.file..".tex"
 						atlas = GetInventoryItemAtlas(tex,true)
@@ -339,6 +339,7 @@ function GroundChestUI:UpdateTiles()
 		if prefab then
 	--		if atlas or string.match(prefab,"%w+_spice_%w+") then
 				tile:SetItem(prefab,atlas,tex,skin ~= nil)
+				tile:SetName(name)
 	--			tile:SetAnimItem(prefab,tex,AnimState) -- I really dislike using the Anim Items and I much prefer seeing no-texture icon than nothing or the animation.
 			if amount then
 				tile:SetText(amount > 1 and amount or nil, nil)

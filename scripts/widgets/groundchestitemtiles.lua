@@ -17,9 +17,6 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 	self.queued = false
 	self.global_highlight = false
 	self.skinned = false
-	self.chestitem = nil -- Compatibility with Chest Memory mod.
-	self.container = nil -- Compatibility with Chest Memory mod.
-	self.chestslot = nil -- Compatibility with Chest Memory mod.
 
 	self.bg = bg or {atlas = "images/quagmire_recipebook.xml", tex = "cookbook_known.tex", scale = 0.4}--Used bg should be something that centers its widgets at (0,0). Value "bg" should hold atlas,tex,scale.
 	--global_redux.tex has some nice images, could any of them be used to convey information?
@@ -174,15 +171,14 @@ function GroundItemTile:RemoveItem()
 	self.tex = nil
 	self.count = nil
 	self.skinned = nil
-	self.chestitem = nil
-	self.container = nil
-	self.chestslot = nil
 	self.item_display:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
 	self.item_display:Hide()
 	self.anim_item:Hide()
 	self.item_display_bg:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex") -- A "debug" texture
 	self.item_display_bg:SetPosition(-4,-32)
 	self.item_display_bg:Hide()
+	self.item_display:ClearHoverText()
+	self.hover_text = nil
 	self:SetQueue(false)
 	self:SetText(nil)
 --	self:StopUpdating()
@@ -216,7 +212,7 @@ function GroundItemTile:CheckForSpicedFood()
 	end
 end
 
-function GroundItemTile:SetItem(item,atlas,tex,skinned,container,slot)
+function GroundItemTile:SetItem(item,atlas,tex,skinned)
 	if (self.item == item and self.atlas == atlas and self.tex == tex) then return end
 	self:RemoveItem()
 	self.anim_item:Hide()
@@ -225,9 +221,6 @@ function GroundItemTile:SetItem(item,atlas,tex,skinned,container,slot)
 	self.tex = tex or "coin_unknown.tex"
 	local name = self:CheckForSpicedFood()
 	self.skinned = skinned
-	self.chestitem = container ~= nil
-	self.container = container
-	self.chestslot = slot
 	self.item_display:SetTextures(self.atlas,self.tex)
 	self.item_display:Show()
 	self.item_display:SetHoverText(name or (item and STRINGS.NAMES[string.upper(item)]) or "")
@@ -248,6 +241,13 @@ function GroundItemTile:SetAnimItem(item,tex,anim_package)
 		AnimState:PlayAnimation(anim,true)
 		self.anim_item:Show()
 		self.anim_item:SetHoverText(item and STRINGS.NAMES[string.upper(item)] or "")
+	end
+end
+
+function GroundItemTile:SetName(name)
+	if not self.hover_text or self.hover_text == "" then
+		self.item_display:SetHoverText(name)
+		self.hover_text = name
 	end
 end
 
