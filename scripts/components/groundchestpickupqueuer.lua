@@ -75,7 +75,9 @@ function GroundChestPickupQueuer:Start()
                     self.item_counter = 1
                 else
                    if self:CheckItemValid(item) then
-                      self:PickupItem(item) 
+                       if not self.owner.components.playercontroller:IsDoingOrWorking() then
+                            self:PickupItem(item)
+                       end
                    else
                        self.item_counter = self.item_counter+1
                    end
