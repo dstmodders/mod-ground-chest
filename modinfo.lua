@@ -96,6 +96,11 @@ local bool_opt = {
     FormatOption("False",false),
 }
 
+local search_ranges = {}
+for i = 5,80,5 do
+	search_ranges[i/5] = FormatOption(""..i,i)
+end
+
 --[[local colours = {--Defined in RGB.
 	{1,1,1},--White
 	{0,0,0},--Black
@@ -114,4 +119,5 @@ local bool_opt = {
 
 configuration_options = {
 	AddOption("ui_button","Toggle UI","Press this button to turn the Ground Chest UI On/Off",keys_opt,0),
+	AddOption("searchrange","Search Range","The range at which items will be searched for",search_ranges,30),
 }

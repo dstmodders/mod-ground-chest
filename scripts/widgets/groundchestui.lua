@@ -29,6 +29,9 @@ end
 
 
 local ui_button = LoadConfig("ui_button")
+local searchrange = LoadConfig("searchrange")
+local max_searchrange = 80
+local min_searchrange = 5
 
 
 
@@ -36,11 +39,12 @@ local function InGame()
 	return ThePlayer and ThePlayer.HUD and not ThePlayer.HUD:HasInputFocus()
 end
 
-local function CreateButtonInfoHover(self,name,text)
+local function CreateButtonInfoHover(self,name,text,offset)
 	if not self then return end
+	offset = offset or {0,24}
 	local identifier = name.."_text"
 	self[identifier] = self[name]:AddChild(Text(BUTTONFONT,32))
-	self[identifier]:SetPosition(0,24)
+	self[identifier]:SetPosition(unpack(offset))
 	self[identifier]:SetString(text)
 	self[identifier]:Hide()
 	
@@ -67,6 +71,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.page = 1
 	self.total_pages = 1
 	self.queue_conditions = {}
+	self.searchrange = searchrange or 30
 
 	self.pos_x = half_x--Centered
 	self.pos_y = half_y*1.5--At a 0.75/1 position from below.
@@ -103,6 +108,61 @@ local GroundChestUI = Class(Widget,function(self,owner)
 		disabled = "arrow_right_disabled.tex",
 		down = "arrow2_right_down.tex",
 	}
+	
+	--//Search Range Widgets--
+	self.rangetext = self.bg:AddChild(Text(NUMBERFONT,20))
+	self.rangetext:SetString("Range: "..tostring(self.searchrange))
+	self.rangetext:SetPosition(self.size_x*5.5/20,self.size_y*7/20)
+	local range_arrow_scale = 1/3
+	
+	self.addrange = self.bg:AddChild(ImageButton("images/ui.xml","arrow2_up.tex"))
+	self.addrange:SetPosition(self.size_x*5.35/20,self.size_y*8/20)
+	self.addrange:SetNormalScale(range_arrow_scale)
+	self.addrange:SetFocusScale(range_arrow_scale)
+	self.addrange:Hide()
+	if not (self.searchrange >= max_searchrange) then
+		self.addrange:Show()
+	end
+	self.addrange_fn = function()
+		if self.searchrange >= max_searchrange then
+			return
+			--Do nothing, range is max, you can't get more entities if you're going over the max one.
+		else
+			self.searchrange = self.searchrange + 5
+			self.subtractrange:Show()
+			if self.searchrange == max_searchrange then
+				self.addrange:Hide()
+			end
+		end
+		self.rangetext:SetString("Range: "..tostring(self.searchrange))
+	end
+	self.addrange:SetOnClick(self.addrange_fn)
+	CreateButtonInfoHover(self,"addrange","+5",{18,0})
+	self.subtractrange = self.bg:AddChild(ImageButton("images/ui.xml","arrow2_down.tex"))
+	self.subtractrange:SetPosition(self.size_x*5.4/20,self.size_y*6/20)
+	self.subtractrange:SetNormalScale(range_arrow_scale)
+	self.subtractrange:SetFocusScale(range_arrow_scale)
+	self.subtractrange:Hide()
+	if not (self.searchrange <= min_searchrange) then
+		self.subtractrange:Show()
+	end
+	self.subtractrange_fn = function()
+		if self.searchrange <= min_searchrange then
+			return
+			--Do nothing, range is min, we ain't going into negatives or 0's.
+		else
+			self.searchrange = self.searchrange - 5
+			self.addrange:Show()
+			if self.searchrange == min_searchrange then
+				self.subtractrange:Hide()
+			end
+		end
+		self.rangetext:SetString("Range: "..tostring(self.searchrange))
+	end
+	self.subtractrange:SetOnClick(self.subtractrange_fn)
+	CreateButtonInfoHover(self,"subtractrange","-5",{18,0})
+	--\\Search Range Widgets--
+	
 
 	self.arrow_left = self.bg:AddChild(ImageButton("images/plantregistry.xml",left_textures.normal,left_textures.over,left_textures.disabled,left_textures.down))
 	self.arrow_left:SetPosition(self.size_x*-1/7,self.size_y*7/20)
@@ -355,7 +415,7 @@ end
 
 function GroundChestUI:RefreshList()
 	local x,y,z = ThePlayer.Transform:GetWorldPosition()
-	self.data_list = self.GenerateItemList({x = x, y = y, z = z},80)
+	self.data_list = self.GenerateItemList({x = x, y = y, z = z},self.searchrange)
 	print("list refreshed", #self.data_list)
 	self:UpdateList()
 end
