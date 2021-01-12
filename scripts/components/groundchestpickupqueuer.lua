@@ -13,8 +13,10 @@ function GroundChestPickupQueuer:PickupItem(item)
     local pos = ThePlayer:GetPosition() --item:GetPosition()
     if TheWorld and TheWorld.ismastersim then
         ThePlayer.components.playercontroller:DoAction(BufferedAction(self.owner,item,ACTIONS.PICKUP))
+        ThePlayer.components.playercontroller:DoAction(BufferedAction(self.owner,item,ACTIONS.CHECKTRAP))
     else
         SendRPCToServer(RPC.LeftClick,ACTIONS.PICKUP.code,pos.x,pos.z,item,true)
+        SendRPCToServer(RPC.LeftClick,ACTIONS.CHECKTRAP.code,pos.x,pos.z,item,true)
     end
 end
 

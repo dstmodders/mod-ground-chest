@@ -9,6 +9,7 @@ local searchFunction = require "searchFunction"
 local GroundChestUIScreen = require "screens/groundchestuiscreen"
 local TEMPLATES = require "widgets/redux/templates"
 local PLANT_DEFS = require("prefabs/farm_plant_defs").PLANT_DEFS
+local status_announcements_enabled = KnownModIndex:IsModEnabled(KnownModIndex:GetModActualName("Status Announcements"))
 
 local screen_x, screen_y,half_x,half_y,w,h
 
@@ -329,7 +330,7 @@ function GroundChestUI:IsQueued(prefab,skin)
 end
 
 function GroundChestUI:ToggleQueueCondition(prefab,skin)
-	if TheInput:IsControlPressed(CONTROL_FORCE_INSPECT) and TheInput:IsKeyDown(KEY_LSHIFT) then return nil end
+	if status_announcements_enabled and TheInput:IsControlPressed(CONTROL_FORCE_INSPECT) and TheInput:IsKeyDown(KEY_LSHIFT) then return nil end
 	local was_condition
 	for k,info in pairs(self.queue_conditions) do
 		if info.prefab == prefab and info.skin == skin then

@@ -5,6 +5,8 @@ local ImageButton = require "widgets/imagebutton"
 local UIAnim = require "widgets/uianim"
 local UIAnimButton = require "widgets/uianimbutton"
 local GetTrueSkinName = require "searchFunction".GetTrueSkinName
+local StatusAnnouncer = KnownModIndex:IsModEnabled(KnownModIndex:GetModActualName("Status Announcements")) and require "statusannouncer" -- Support for rezecib's mod 'Status Announcements'
+StatusAnnouncer = StatusAnnouncer and StatusAnnouncer() or nil
 
 --GroundItemTile Class: Holds some item information, widget clickable for some other functionality.
 local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
@@ -138,7 +140,7 @@ function GroundItemTile:SetQueue(queue,visual)
 end
 
 function GroundItemTile:GetPingKeysPressed()
-	return TheInput:IsControlPressed(CONTROL_FORCE_INSPECT) and TheInput:IsKeyDown(KEY_LSHIFT)
+	return StatusAnnouncer and TheInput:IsControlPressed(CONTROL_FORCE_INSPECT) and TheInput:IsKeyDown(KEY_LSHIFT)
 end
 
 function GroundItemTile:Ping()
@@ -147,9 +149,10 @@ function GroundItemTile:Ping()
 	if self:HasItem() then
 		local vowels = {"a","e","i","o","u"}
 		local item_name = not self.skinned and self.hover_text or STRINGS.SKIN_NAMES[string.sub(self.tex,1,-5)]
-		local item_name_many = item_name.."s"
+		local cant_be_pluralized = string.match(item_name,"%a+(s)$") -- Last words letter is 's'
+		local item_name_many = cant_be_pluralized and item_name or item_name.."s"
 		local item_count = self.text_upper:GetString()
-		local message = STRINGS.LMB.." "
+		local message = ""--STRINGS.LMB.." "
 		local a_an = "a"
 		for k,v in pairs(vowels) do 
 			if string.lower(string.match(item_name,"%a") or "") == v then
@@ -161,7 +164,8 @@ function GroundItemTile:Ping()
 		else
 			message = message.."There are "..item_count.." "..item_name_many.." in the area."
 		end
-		TheNet:Say(message, whisper)
+		--TheNet:Say(message, whisper)
+		StatusAnnouncer:Announce(message)
 	end
 end
 
