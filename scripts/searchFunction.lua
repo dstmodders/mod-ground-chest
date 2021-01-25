@@ -6,7 +6,7 @@ end
 
 local function GetTrueSkinName(build,prefab,method)
 	local function ApplyMethods()
-		local methods = {"_item","_drawn"}
+		local methods = {"_item","_drawn","item"}
 		local result
 		for k,v in pairs(methods) do
 			result = GetTrueSkinName(build,prefab,v)
@@ -29,13 +29,14 @@ local function GetTrueSkinName(build,prefab,method)
     local skin = build
     for k,word in pairs(words) do
         skin = string.gsub(skin,word,"")
-        skin = string.gsub(skin,"__","_")
+        skin = string.gsub(skin,"__+","_")
     end
 	local possible_skin_name
 	if not method then
 		possible_skin_name = prefab..skin
 	elseif method then
 		possible_skin_name = string.gsub(prefab,method,"")..skin..method
+		possible_skin_name = string.gsub(possible_skin_name,"__+","_") -- In case there's any from doing a method in another non '_name' way.
 	end
 	
 	if possible_skin_name and GetInventoryItemAtlas(possible_skin_name..".tex",true) then
@@ -65,12 +66,12 @@ local function GenerateItemList(pos, distance)
 		local obj = entities[i]
 		if obj then
 			local prefab = obj.prefab
-			local adjective = obj.displayadjectivefn and obj.displayadjectivefn().." " or ""
+			local adj_fn = obj.displayadjectivefn
+			local adj_fn_str = adj_fn and type(adj_fn()) == "string" and adj_fn()
+			local adjective = adj_fn_str and adj_fn_str.." " or ""
 			if not prefabToNum[prefab] then
 				result[num] = {}
 				result[num].groups = {}
---				result[num].animstates = {}
---				result[num].AnimState = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
 				result[num].prefab = prefab
 				result[num].name   = adjective..obj:GetBasicDisplayName()
 				result[num].durability = obj.components.finiteuses ~= nil
@@ -83,7 +84,6 @@ local function GenerateItemList(pos, distance)
 					result[num].groups[#result[num].groups + 1] = obj
 				else
 					result[num].groups[GetSkin(obj) or "none"] = result[num].amount
---					result[num].animstates[GetSkin(obj) or "none"] = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
 				end
 				prefabToNum[prefab] = num
 				num = num+1
@@ -96,7 +96,6 @@ local function GenerateItemList(pos, distance)
 				else
 					local skin = GetSkin(obj) or "none"
 					result[num].groups[skin] = (result[num].groups[skin] or 0) + amount
---					result[num].animstates[skin] = {[1] = string.match(obj:GetDebugString(), "AnimState:.*bank:%s+(%S+)"),[2] = obj.AnimState and obj.AnimState:GetBuild(), [3] = string.match(obj:GetDebugString(), "AnimState:.*anim:%s+(%S+)")}
 				end
 			end
 		end
@@ -122,7 +121,7 @@ local function FetchItemList(datalist, matchingText)
 	local advanced = matchingText and matchingText ~= ""
 	matchingText = string.lower(matchingText)
 	for i = 1,#datalist do
-		if not matchingText or string.find(string.lower(datalist[i].name),matchingText) then
+		if not matchingText or string.find(string.lower(datalist[i].name),matchingText,1,true) then
 			if advanced then
 				local name = datalist[i].name
 				local prefab = datalist[i].prefab
@@ -144,7 +143,6 @@ local function FetchItemList(datalist, matchingText)
 						result[num].prefab = prefab
 						result[num].amount = v
 						result[num].skin   = k ~= "none" and k or nil
---						result[num].AnimState = datalist[i].animstates[k or "none"]
 						num = num + 1
 					end
 				end
@@ -152,7 +150,6 @@ local function FetchItemList(datalist, matchingText)
 				result[num] = {}
 				result[num].name   = datalist[i].name
 				result[num].prefab = datalist[i].prefab
---				result[num].AnimState = datalist[i].AnimState
 				result[num].amount = datalist[i].amount
 				num = num + 1
 			end

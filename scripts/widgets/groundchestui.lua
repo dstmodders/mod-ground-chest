@@ -316,20 +316,29 @@ function GroundChestUI:HandleMouseMovement()
 	end	
 end
 
-function GroundChestUI:IsQueued(prefab,skin)
-	local is_global_queue,is_skin_queue
+function GroundChestUI:IsQueued(prefab,skin,skinned)
+	local is_global_queue,is_skin_queue,all
+    skin = skin or (skinned and "default")
 	for k,info in pairs(self.queue_conditions) do
-		if info.prefab == prefab then
-			is_global_queue = true
-		end
-		if info.prefab == prefab and info.skin == skin then
-			is_skin_queue = true
-		end
+        if info.prefab == prefab then
+            --print(k,info.prefab,info.skin,info.all)
+            if not info.skin then
+                is_global_queue = true
+            end
+            if info.skin == skin then
+                is_skin_queue = true
+            end
+            if info.all then
+                all = true
+            end
+        end
 	end
-	return is_global_queue,is_skin_queue
+	return is_global_queue,is_skin_queue,all
 end
 
-function GroundChestUI:ToggleQueueCondition(prefab,skin)
+function GroundChestUI:ToggleQueueCondition(prefab,skin,skinned)
+    local shift_down = TheInput:IsKeyDown(KEY_SHIFT)
+    skin = skin or (skinned and "default")
 	if status_announcements_enabled and TheInput:IsControlPressed(CONTROL_FORCE_INSPECT) and TheInput:IsKeyDown(KEY_LSHIFT) then return nil end
 	local was_condition
 	for k,info in pairs(self.queue_conditions) do
@@ -340,7 +349,7 @@ function GroundChestUI:ToggleQueueCondition(prefab,skin)
 		end
 	end
 	if not was_condition then
-		table.insert(self.queue_conditions,#self.queue_conditions+1,{prefab = prefab, skin = skin})
+		table.insert(self.queue_conditions,#self.queue_conditions+1,{prefab = prefab, skin = skin, all = shift_down})
 	end
 end
 
@@ -348,7 +357,7 @@ local GetTrueSkinName = searchFunction.GetTrueSkinName
 
 function GroundChestUI:UpdateTiles()
 	for num,tile in pairs(self.tiles) do
-		local entity = self.item_list[num+50*(self.page-1)] or {} -- 50 is the current number of items supported per page.
+		local entity = self.item_list[num+items_page*(self.page-1)] or {} -- 50 is the current number of items supported per page.
 		local prefab = entity.prefab
 		local name   = entity.name
 		local amount = entity.amount
@@ -378,21 +387,20 @@ function GroundChestUI:UpdateTiles()
 				end
 			end
 		end
-		--Issue with queue coloring: Items that seperate into skins won't get coloured if the selected queued item was their combined part.
-		local global_queue,skin_queue = self:IsQueued(prefab,skin)
+		local global_queue,skin_queue,all = self:IsQueued(prefab,skin,self.searchtext ~= "")
 		tile:SetQueue(false,true)
 		if self.searchtext ~= "" then -- Items get seperated by their skins while searching, that means highlighting should also change to be based on skin.
 			tile:SetGlobalHighlight(false)
-			tile:SetQueue(skin_queue,true)
+			tile:SetQueue(skin_queue,true,all)
 		else -- If the string is empty, then items aren't seperated into skins and highlight should highlight all of that item with no respect to the skin.
 			tile:SetGlobalHighlight(true)
-			tile:SetQueue(global_queue or skin_queue,true)
+			tile:SetQueue(global_queue,true,all)
 		end
 
 		tile:SetOnClickFn(function()
 			if tile:HasItem() then 
 				tile:ToggleQueue() 
-				self:ToggleQueueCondition(prefab,skin)
+				self:ToggleQueueCondition(prefab,skin,self.searchtext ~= "")
 				tile:Ping()
 			end 
 		end)

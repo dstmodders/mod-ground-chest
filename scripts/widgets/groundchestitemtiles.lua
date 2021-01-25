@@ -110,7 +110,7 @@ function GroundItemTile:ToggleQueue()
 	self:SetQueue(not self.queued)
 end
 
-function GroundItemTile:SetQueue(queue,visual)
+function GroundItemTile:SetQueue(queue,visual,all)
 	if self:GetPingKeysPressed() then return nil end
 	local build
 	local isheld_shift = TheInput:IsKeyDown(KEY_SHIFT)
@@ -119,7 +119,7 @@ function GroundItemTile:SetQueue(queue,visual)
 	end
 	if queue then
 		self.item_bg:SetTextures("images/quagmire_recipebook.xml","recipe_known.tex")
-		if isheld_shift then
+		if (not visual and isheld_shift) or (visual and all) then
 			local shifted_colour = {1,1,0,1}
 			self.item_bg:SetImageNormalColour(unpack(shifted_colour))
 			self.item_bg:SetImageFocusColour(unpack(shifted_colour))
@@ -183,7 +183,7 @@ function GroundItemTile:RemoveItem()
 	self.item_display_bg:Hide()
 	self.item_display:ClearHoverText()
 	self.hover_text = nil
-	self:SetQueue(false)
+--	self:SetQueue(false) -- Changed to be handled at groundchestui.lua due to code order.
 	self:SetText(nil)
 --	self:StopUpdating()
 end

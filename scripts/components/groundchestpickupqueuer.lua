@@ -45,6 +45,7 @@ end
 function GroundChestPickupQueuer:AddToQueue(prefab,build,all,skinned,non_defaults)
     local ent_list,empty = self:GetItemList(prefab,build,all,skinned,non_defaults)
     if empty then return nil end
+    --print("Added to queue: ","{",prefab,build,all,skinned,non_defaults,"}")
     self.queue[#self.queue+1] = {list = ent_list, prefab = prefab, build = build, skinned = skinned, all = all, non_defaults = non_defaults}
     if not self.owner[thread_name] then self:Start() end
 end
@@ -52,6 +53,7 @@ end
 function GroundChestPickupQueuer:RemoveFromQueue(prefab,build,skinned)
     for k,queue in pairs(self.queue) do
         if queue.prefab == prefab and queue.build == build and queue.skinned == skinned then
+           --print("Removed from queue: ","{",prefab,build,skinned,"}")
            table.remove(self.queue,k)
            break
         end
@@ -102,7 +104,7 @@ function GroundChestPickupQueuer:Stop() -- Full stop, including removing the ent
         self.owner[thread_name] = nil
         self:ResetQueue()
         self.owner:PushEvent("groundchestpickupqueuer_stopped")
-        print("GroundChestPickupQueuer stopped")
+        --print("GroundChestPickupQueuer stopped")
    end
 end
 
