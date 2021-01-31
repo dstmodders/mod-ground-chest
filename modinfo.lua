@@ -33,7 +33,7 @@ local function AddEmptySeperator(seperator)
 end
 
 local keys_opt = {
-    FormatOption("None",0),
+    FormatOption("None--",0),
     FormatOption("A",97),
     FormatOption("B",98),
     FormatOption("C",99),
@@ -118,6 +118,6 @@ end
 	}--]]
 
 configuration_options = {
-	AddOption("ui_button","Toggle UI","Press this button to turn the Ground Chest UI On/Off",keys_opt,0),
-	AddOption("searchrange","Search Range","The range at which items will be searched for",search_ranges,30),
+	AddOption("ui_button","Toggle UI","Press this button to turn the Ground Chest UI On/Off",keys_opt,114), -- Default key is 'R'
+	AddOption("searchrange","Search Range","The default range at which items will be searched for",search_ranges,30),
 }

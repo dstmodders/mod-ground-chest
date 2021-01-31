@@ -2,8 +2,6 @@ local Widget = require "widgets/widget"
 local Text = require "widgets/text"
 local Image = require "widgets/image"
 local ImageButton = require "widgets/imagebutton"
-local UIAnim = require "widgets/uianim"
-local UIAnimButton = require "widgets/uianimbutton"
 local GetTrueSkinName = require "searchFunction".GetTrueSkinName
 local StatusAnnouncer = KnownModIndex:IsModEnabled(KnownModIndex:GetModActualName("Status Announcements")) and require "statusannouncer" -- Support for rezecib's mod 'Status Announcements'
 StatusAnnouncer = StatusAnnouncer and StatusAnnouncer() or nil
@@ -61,12 +59,6 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 
 	self.item_display:SetScale(2,2,2) -- The item is rather small compared to the tile itself.
 	
-	local anim_item_scl = 0.65
-	self.anim_item = self.item_bg:AddChild(UIAnim())
-	self.anim_item:SetScale(anim_item_scl,anim_item_scl,anim_item_scl)
-	self.anim_item:SetPosition(-3,-30)
-	self.anim_item:Hide()
-	
 	self.item_display_bg = self.item_display:AddChild(ImageButton()) -- This will usually be hidden.
 	-- self.item_display_bg can be visible when there's a special background(Spiced food, known freshness, etc.)
 	self.item_display_bg:SetScale(1,1,1)
@@ -87,8 +79,6 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 
 	self.item_display:SetOnGainFocus(function() self:HighlightSelf(true) end)
 	self.item_display:SetOnLoseFocus(function() self:HighlightSelf(false) end)
-	self.anim_item:SetOnGainFocus(function() self.anim_item:SetScale(focus_scl*anim_item_scl)  self:HighlightSelf(true) end)
-	self.anim_item:SetOnLoseFocus(function() self.anim_item:SetScale(normal_scl*anim_item_scl) self:HighlightSelf(false) end)
 	self:SetScale(self.widget_scale)
 	self:Show()
 	--self:StartUpdating() -- Currently no reason to be updating.
@@ -99,11 +89,7 @@ function GroundItemTile:SetOnClickFn(fn)
 end
 
 function GroundItemTile:SetGlobalHighlight(global)
-	if global then
-		self.global_highlight = true
-	else
-		self.global_highlight = false
-	end
+	self.global_highlight = global or false
 end
 
 function GroundItemTile:ToggleQueue()
@@ -115,7 +101,7 @@ function GroundItemTile:SetQueue(queue,visual,all)
 	local build
 	local isheld_shift = TheInput:IsKeyDown(KEY_SHIFT)
 	if self.tex then
-		build = string.sub(self.tex,1,-5)
+		build = string.match(self.tex,"(%w+).tex")
 	end
 	if queue then
 		self.item_bg:SetTextures("images/quagmire_recipebook.xml","recipe_known.tex")
@@ -125,17 +111,15 @@ function GroundItemTile:SetQueue(queue,visual,all)
 			self.item_bg:SetImageFocusColour(unpack(shifted_colour))
 		end
 		self.queued = true
-		if not visual then
-			ThePlayer.components.groundchestpickupqueuer:AddToQueue(self.item,build,isheld_shift,self.skinned,self.global_highlight)
-		end
+		if visual then return true end
+        ThePlayer.components.groundchestpickupqueuer:AddToQueue(self.item,build,isheld_shift,self.skinned,self.global_highlight)
 	else
 		self.item_bg:SetTextures(self.bg.atlas,self.bg.tex)
 		self.item_bg:SetImageNormalColour(1,1,1,1)
 		self.item_bg:SetImageFocusColour(1,1,1,1)
 		self.queued = false
-		if not visual then
-			ThePlayer.components.groundchestpickupqueuer:RemoveFromQueue(self.item,build,self.skinned,self.global_highlight)
-		end
+		if visual then return true end
+        ThePlayer.components.groundchestpickupqueuer:RemoveFromQueue(self.item,build,self.skinned,self.global_highlight)
 	end
 end
 
@@ -153,14 +137,9 @@ function GroundItemTile:Ping()
 		local item_name_many = cant_be_pluralized and item_name or item_name.."s"
 		local item_count = self.text_upper:GetString()
 		local message = ""--STRINGS.LMB.." "
-		local a_an = "a"
-		for k,v in pairs(vowels) do 
-			if string.lower(string.match(item_name,"%a") or "") == v then
-				a_an = "an"
-			end
-		end
+		local article = string.match(item_name,"^[AEIOUaeiou]") and "an" or "a" 
 		if item_count == "1"  or item_count == "" then
-			message = message.."There is "..a_an.." "..item_name.." in the area."
+			message = message.."There is "..article.." "..item_name.." in the area."
 		else
 			message = message.."There are "..item_count.." "..item_name_many.." in the area."
 		end
@@ -177,7 +156,6 @@ function GroundItemTile:RemoveItem()
 	self.skinned = nil
 	self.item_display:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
 	self.item_display:Hide()
-	self.anim_item:Hide()
 	self.item_display_bg:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex") -- A "debug" texture
 	self.item_display_bg:SetPosition(-4,-32)
 	self.item_display_bg:Hide()
@@ -197,8 +175,8 @@ function GroundItemTile:CheckForSpicedFood()
 	end
 	local spiced_food = string.match(self.item,"%w+_spice_%w+")
 	if spiced_food then -- Time to use the item display background
-		local spice = string.sub(string.match(self.item,"_spice_%w+"),8,-1)
-		local food = string.sub(string.match(self.item,"%w+_spice"),1,-7)
+		local spice = string.match(self.item,"_spice_(%w+)")
+		local food = string.match(self.item,"(%w+)_spice")
 		local spice_tex = "spice_"..spice.."_over.tex"
 		local spice_atlas = GetInventoryItemAtlas(spice_tex)
 		self.tex = food..".tex"
@@ -207,7 +185,7 @@ function GroundItemTile:CheckForSpicedFood()
 		self.item_display_bg:SetPosition(0,0)
 		self.item_display_bg:MoveToFront()
 		self.item_display_bg:Show()
-		local spiced_name = string.sub(STRINGS.NAMES["SPICE_"..string.upper(spice).."_FOOD"],1,-7)..STRINGS.NAMES[string.upper(food)]
+		local spiced_name = string.gsub(STRINGS.NAMES["SPICE_"..string.upper(spice).."_FOOD"],"{food}",STRINGS.NAMES[string.upper(food)])
 		return spiced_name
 	else
 		self.item_display_bg:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
@@ -219,7 +197,6 @@ end
 function GroundItemTile:SetItem(item,atlas,tex,skinned)
 	if (self.item == item and self.atlas == atlas and self.tex == tex) then return end
 	self:RemoveItem()
-	self.anim_item:Hide()
 	self.item = item
 	self.atlas = atlas or "images/quagmire_recipebook.xml"
 	self.tex = tex or "coin_unknown.tex"
@@ -227,31 +204,15 @@ function GroundItemTile:SetItem(item,atlas,tex,skinned)
 	self.skinned = skinned
 	self.item_display:SetTextures(self.atlas,self.tex)
 	self.item_display:Show()
-	self.item_display:SetHoverText(name or (item and STRINGS.NAMES[string.upper(item)]) or "")
-	self.hover_text = name or (item and STRINGS.NAMES[string.upper(item)]) or ""
+    self.hover_text = name or (item and STRINGS.NAMES[string.upper(item)]) or ""
+	self.item_display:SetHoverText(self.hover_text)
 	--self:StartUpdating()--Currently no reason to be updating.
-end
-
-function GroundItemTile:SetAnimItem(item,tex,anim_package)
-	local bank,build,anim = unpack(anim_package or {})
-	if bank and build and anim then
-		self:RemoveItem()
-		self.item = item
-		self.tex = tex
---		print(bank,build,anim,self.item,self.tex)
-		local AnimState = self.anim_item:GetAnimState()
-		AnimState:SetBank(bank)
-		AnimState:SetBuild(build)
-		AnimState:PlayAnimation(anim,true)
-		self.anim_item:Show()
-		self.anim_item:SetHoverText(item and STRINGS.NAMES[string.upper(item)] or "")
-	end
 end
 
 function GroundItemTile:SetName(name)
 	if not self.hover_text or self.hover_text == "" then
-		self.item_display:SetHoverText(name)
-		self.hover_text = name
+        self.hover_text = name
+		self.item_display:SetHoverText(self.hover_text)
 	end
 end
 
@@ -270,7 +231,8 @@ function GroundItemTile:GetSelfItemList()
 	local ent_list = TheSim:FindEntities(pos.x,0,pos.z,80,{"_inventoryitem"}, {"FX", "NOCLICK", "DECOR"})
 	local valid_ent_list = {}
 	for k,ent in pairs(ent_list) do
-		if ent.prefab == self.item and (self.global_highlight or IsMatchingTex(ent,self.tex,self.item) or string.match(self.item,"%w+_spice_%w+") or string.match(self.tex,"quagmire")) then
+        local _isspiced_or_quagmire = string.match(self.item,"%w+_spice_%w+") or string.match(self.tex,"quagmire")
+		if ent.prefab == self.item and (self.global_highlight or IsMatchingTex(ent,self.tex,self.item) or _isspiced_or_quagmire) then
 			table.insert(valid_ent_list,#valid_ent_list+1,ent)
 		end
 	end
@@ -318,21 +280,6 @@ function GroundItemTile:SetStackText(text)
 		self.count_text:Show()
 		self.count_text:SetString(text and tostring(text) or "")
 	end
-end
-]]
-
---[[
-function GroundItemTile:GetAtlasAndTex()
-	if self.item and self.item.replica and self.item.replica.inventoryitem then
-		local atlas = self.item.replica.inventoryitem:GetAtlas()
-		local tex = self.item.replica.inventoryitem:GetImage()
-		local build = self.item.AnimState:GetBuild()
-		if string.match(build,self.item.prefab) then
-			return atlas,build..".tex"
-		end
-		return atlas,tex
-	end
-	return nil,nil
 end
 ]]
 

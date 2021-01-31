@@ -1,6 +1,5 @@
 local Widget = require "widgets/widget"
 local Screen = require "widgets/screen"
-local TextEdit = require "widgets/textedit"
 
 local GroundChestUIScreen = Class(Screen,function(self, textbox)
         Screen._ctor(self,"GroundChestUIScreen")

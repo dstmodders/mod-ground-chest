@@ -139,6 +139,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	end
 	self.addrange:SetOnClick(self.addrange_fn)
 	CreateButtonInfoHover(self,"addrange","+5",{18,0})
+
 	self.subtractrange = self.bg:AddChild(ImageButton("images/ui.xml","arrow2_down.tex"))
 	self.subtractrange:SetPosition(self.size_x*5.4/20,self.size_y*6/20)
 	self.subtractrange:SetNormalScale(range_arrow_scale)
@@ -491,7 +492,7 @@ function GroundChestUI:OnUpdate(dt)
 end
 
 if ui_button and ui_button ~= 0 then
-	TheInput:AddKeyDownHandler(ui_button,function() if not InGame() then return else on_button_press_fn() end end)
+	TheInput:AddKeyUpHandler(ui_button,function() if not InGame() then return else on_button_press_fn() end end)
 end
 
 return GroundChestUI   
