@@ -96,10 +96,16 @@ local bool_opt = {
     FormatOption("False",false),
 }
 
-local search_ranges = {}
-for i = 5,80,5 do
-	search_ranges[i/5] = FormatOption(""..i,i)
-end
+local search_ranges = {
+    FormatOption("Short",1),
+    FormatOption("Medium",2),
+    FormatOption("Large",3),
+}
+
+--local search_ranges = {}
+--for i = 5,80,5 do
+--	search_ranges[i/5] = FormatOption(""..i,i)
+--end
 
 --[[local colours = {--Defined in RGB.
 	{1,1,1},--White
@@ -119,5 +125,5 @@ end
 
 configuration_options = {
 	AddOption("ui_button","Toggle UI","Press this button to turn the Ground Chest UI On/Off",keys_opt,114), -- Default key is 'R'
-	AddOption("searchrange","Search Range","The default range at which items will be searched for",search_ranges,30),
+	AddOption("searchrange","Search Range","The default range at which items will be searched for",search_ranges,2),
 }

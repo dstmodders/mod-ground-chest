@@ -1,6 +1,7 @@
 local Widget = require "widgets/widget"
 local Text = require "widgets/text"
 local Image = require "widgets/image"
+local TextButton = require "widgets/textbutton"
 local ImageButton = require "widgets/imagebutton"
 local UIAnim = require "widgets/uianim"
 local UIAnimButton = require "widgets/uianimbutton"
@@ -27,14 +28,10 @@ local function LoadConfig(name)
 	return GetModConfigData(name,mod) or GetModConfigData(name,KnownModIndex:GetModActualName(mod))
 end
 
-
-
 local ui_button = LoadConfig("ui_button")
-local searchrange = LoadConfig("searchrange")
-local max_searchrange = 80
-local min_searchrange = 5
-
-
+local searchrange_num = LoadConfig("searchrange")
+local searchrange_list = {5,25,80}
+local searchrange_names = {"Short","Medium","Large"}
 
 local function InGame()
 	return ThePlayer and ThePlayer.HUD and not ThePlayer.HUD:HasInputFocus()
@@ -72,7 +69,9 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.page = 1
 	self.total_pages = 1
 	self.queue_conditions = {}
-	self.searchrange = searchrange or 30
+	self.searchrange_num = searchrange_num
+	self.searchrange = searchrange_list[self.searchrange_num]
+	self.includeskins = false
 
 	self.pos_x = half_x--Centered
 	self.pos_y = half_y*1.5--At a 0.75/1 position from below.
@@ -86,6 +85,18 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self:SetPosition(self.pos_x+self.offset_x,self.pos_y+self.offset_y)
 	self.bg:SetSize(self.size_x,self.size_y)
 	self.itembg = {atlas = "images/quagmire_recipebook.xml", tex = "cookbook_known.tex", scale = 0.4}
+
+	local checkbox_fn = function(checkbox)
+		self.includeskins = not self.includeskins
+		self:UpdateList()
+		checkbox.checked = self.includeskins
+		checkbox:Refresh()
+		return true
+	end
+	self.skincheckbox = self.bg:AddChild(TEMPLATES.LabelCheckbox(checkbox_fn,self.includeskins,"Include Skins"))
+	self.skincheckbox:SetFont(NUMBERFONT)
+	self.skincheckbox.text:SetPosition(20 + self.skincheckbox.text:GetRegionSize()/2, 0)
+	self.skincheckbox:SetPosition(self.size_x*4/7,self.size_y*7/20)
 
 	self.refreshbutton = self.bg:AddChild(ImageButton("images/button_icons.xml","refresh.tex"))
 	self.refreshbutton:SetPosition(self.size_x*2.9/7,self.size_y*7/20)
@@ -111,58 +122,20 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	}
 	
 	--//Search Range Widgets--
-	self.rangetext = self.bg:AddChild(Text(NUMBERFONT,20))
-	self.rangetext:SetString("Range: "..tostring(self.searchrange))
+	self.rangetext = self.bg:AddChild(TextButton("searchrange"))
+	self.rangetext:SetFont(NUMBERFONT)
+	self.rangetext:SetTextSize(27.5)
+	self.rangetext:SetText("Range:\n"..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
+	self.rangetext:SetTextColour({1,1,1,1})
+	self.rangetext:SetTextFocusColour({1,0.8,0.05,1})
 	self.rangetext:SetPosition(self.size_x*5.5/20,self.size_y*7/20)
-	local range_arrow_scale = 1/3
-	
-	self.addrange = self.bg:AddChild(ImageButton("images/ui.xml","arrow2_up.tex"))
-	self.addrange:SetPosition(self.size_x*5.35/20,self.size_y*8/20)
-	self.addrange:SetNormalScale(range_arrow_scale)
-	self.addrange:SetFocusScale(range_arrow_scale)
-	self.addrange:Hide()
-	if not (self.searchrange >= max_searchrange) then
-		self.addrange:Show()
-	end
-	self.addrange_fn = function()
-		if self.searchrange >= max_searchrange then
-			return
-			--Do nothing, range is max, you can't get more entities if you're going over the max one.
-		else
-			self.searchrange = self.searchrange + 5
-			self.subtractrange:Show()
-			if self.searchrange == max_searchrange then
-				self.addrange:Hide()
-			end
-		end
-		self.rangetext:SetString("Range: "..tostring(self.searchrange))
-	end
-	self.addrange:SetOnClick(self.addrange_fn)
-	CreateButtonInfoHover(self,"addrange","+5",{18,0})
 
-	self.subtractrange = self.bg:AddChild(ImageButton("images/ui.xml","arrow2_down.tex"))
-	self.subtractrange:SetPosition(self.size_x*5.4/20,self.size_y*6/20)
-	self.subtractrange:SetNormalScale(range_arrow_scale)
-	self.subtractrange:SetFocusScale(range_arrow_scale)
-	self.subtractrange:Hide()
-	if not (self.searchrange <= min_searchrange) then
-		self.subtractrange:Show()
+	self.rangetext_fn = function()
+		self.searchrange_num = (self.searchrange_num % 3) + 1
+		self.searchrange = searchrange_list[self.searchrange_num]
+		self.rangetext:SetText("Range:\n"..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
 	end
-	self.subtractrange_fn = function()
-		if self.searchrange <= min_searchrange then
-			return
-			--Do nothing, range is min, we ain't going into negatives or 0's.
-		else
-			self.searchrange = self.searchrange - 5
-			self.addrange:Show()
-			if self.searchrange == min_searchrange then
-				self.subtractrange:Hide()
-			end
-		end
-		self.rangetext:SetString("Range: "..tostring(self.searchrange))
-	end
-	self.subtractrange:SetOnClick(self.subtractrange_fn)
-	CreateButtonInfoHover(self,"subtractrange","-5",{18,0})
+	self.rangetext:SetOnClick(self.rangetext_fn)
 	--\\Search Range Widgets--
 	
 
@@ -388,9 +361,10 @@ function GroundChestUI:UpdateTiles()
 				end
 			end
 		end
-		local global_queue,skin_queue,all = self:IsQueued(prefab,skin,self.searchtext ~= "")
+		local includeskins = self.includeskins == nil and self.searchtext ~= "" or self.includeskins or false
+		local global_queue,skin_queue,all = self:IsQueued(prefab,skin,includeskins)
 		tile:SetQueue(false,true)
-		if self.searchtext ~= "" then -- Items get seperated by their skins while searching, that means highlighting should also change to be based on skin.
+		if includeskins then -- Items get seperated by their skins while searching, that means highlighting should also change to be based on skin.
 			tile:SetGlobalHighlight(false)
 			tile:SetQueue(skin_queue,true,all)
 		else -- If the string is empty, then items aren't seperated into skins and highlight should highlight all of that item with no respect to the skin.
@@ -401,7 +375,7 @@ function GroundChestUI:UpdateTiles()
 		tile:SetOnClickFn(function()
 			if tile:HasItem() then 
 				tile:ToggleQueue() 
-				self:ToggleQueueCondition(prefab,skin,self.searchtext ~= "")
+				self:ToggleQueueCondition(prefab,skin,includeskins)
 				tile:Ping()
 			end 
 		end)
@@ -431,7 +405,7 @@ function GroundChestUI:RefreshList()
 end
 
 function GroundChestUI:UpdateList()
-	self.item_list = self.FetchItemList(self.data_list, self.searchbox:GetString())
+	self.item_list = self.FetchItemList(self.data_list, self.searchbox:GetString(), self.includeskins)
 	print("list updated", #self.item_list, self.searchbox:GetString())
 	self:UpdatePages()
 	self:UpdatePageText()

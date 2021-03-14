@@ -49,14 +49,15 @@ local function GetTrueSkinName(build,prefab,method)
 end
 
 local function GenerateItemList(pos, distance)
-	local platform = TheWorld.Map:GetPlatformAtPoint(pos.x, pos.z)
+--	local platform = TheWorld.Map:GetPlatformAtPoint(pos.x, pos.z)
 	local entities = TheSim:FindEntities(pos.x, pos.y, pos.z, distance, {"_inventoryitem"}, {"FX", "NOCLICK", "DECOR", "INLIMBO", "catchable", "mineactive", "intense"})
 	for i = #entities,1,-1 do
 		local obj = entities[i]
 		if obj.replica.inventoryitem == nil or not obj.replica.inventoryitem:CanBePickedUp() then
 			table.remove(entities,i)
-		elseif obj:GetCurrentPlatform() ~= platform or obj:IsOnOcean(false) then -- Objects located not in the same boat or in the ocean are excluded from the list
-			table.remove(entities,i)
+-- Removed for now since there's a setting for range
+--		elseif obj:GetCurrentPlatform() ~= platform or obj:IsOnOcean(false) then -- Objects located not in the same boat or in the ocean are excluded from the list
+--			table.remove(entities,i)
 		end
 	end
 	local result = {}
@@ -114,11 +115,11 @@ local function sortResult(a,b)
 	return a.prefab < b.prefab
 end
 
-local function FetchItemList(datalist, matchingText)
+local function FetchItemList(datalist, matchingText, includeSkins)
 	if not datalist then return nil end
 	local result = {}
 	local num = 1
-	local advanced = matchingText and matchingText ~= ""
+	local advanced = includeSkins == nil and matchingText and matchingText ~= "" or includeSkins
 	matchingText = string.lower(matchingText)
 	for i = 1,#datalist do
 		if not matchingText or string.find(string.lower(datalist[i].name),matchingText,1,true) then
