@@ -30,8 +30,9 @@ end
 
 local ui_button = LoadConfig("ui_button")
 local searchrange_num = LoadConfig("searchrange")
-local searchrange_list = {5,25,80}
+local searchrange_list = {6,25,80}
 local searchrange_names = {"Short","Medium","Large"}
+local searchrange_colours = {{0.6,0.6,0.6,1},{0.8,0.8,0.8,1},{1,1,1,1}}
 
 local function InGame()
 	return ThePlayer and ThePlayer.HUD and not ThePlayer.HUD:HasInputFocus()
@@ -96,12 +97,10 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.skincheckbox = self.bg:AddChild(TEMPLATES.LabelCheckbox(checkbox_fn,self.includeskins,"Include Skins"))
 	self.skincheckbox:SetFont(NUMBERFONT)
 	self.skincheckbox.text:SetPosition(20 + self.skincheckbox.text:GetRegionSize()/2, 0)
-	self.skincheckbox:SetPosition(self.size_x*4/7,self.size_y*7/20)
 
 	self.refreshbutton = self.bg:AddChild(ImageButton("images/button_icons.xml","refresh.tex"))
-	self.refreshbutton:SetPosition(self.size_x*2.9/7,self.size_y*7/20)
 	self.refreshbutton:SetNormalScale(0.2)
-	self.refreshbutton:SetFocusScale(0.2*1.1)
+	self.refreshbutton:SetFocusScale(0.2*1.2)
 	self.refreshbutton_fn = function() self:RefreshList() end
 	self.refreshbutton:SetOnClick(self.refreshbutton_fn)
 
@@ -126,21 +125,21 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.rangetext:SetFont(NUMBERFONT)
 	self.rangetext:SetTextSize(27.5)
 	self.rangetext:SetText("Range:\n"..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
-	self.rangetext:SetTextColour({1,1,1,1})
+	self.rangetext:SetTextColour(searchrange_colours[self.searchrange_num] or {1,1,1,1})
+--	self.rangetext:SetTextColour({1,1,1,1})
 	self.rangetext:SetTextFocusColour({1,0.8,0.05,1})
-	self.rangetext:SetPosition(self.size_x*5.5/20,self.size_y*7/20)
 
 	self.rangetext_fn = function()
 		self.searchrange_num = (self.searchrange_num % 3) + 1
 		self.searchrange = searchrange_list[self.searchrange_num]
 		self.rangetext:SetText("Range:\n"..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
+		self.rangetext:SetTextColour(searchrange_colours[self.searchrange_num] or {1,1,1,1})
 	end
 	self.rangetext:SetOnClick(self.rangetext_fn)
 	--\\Search Range Widgets--
 	
 
 	self.arrow_left = self.bg:AddChild(ImageButton("images/plantregistry.xml",left_textures.normal,left_textures.over,left_textures.disabled,left_textures.down))
-	self.arrow_left:SetPosition(self.size_x*-1/7,self.size_y*7/20)
 	self.arrow_left:SetNormalScale(0.5)
 	self.arrow_left:SetFocusScale(0.5)
 
@@ -150,7 +149,6 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	CreateButtonInfoHover(self,"arrow_left","Previous Page")
 
 	self.arrow_right = self.bg:AddChild(ImageButton("images/plantregistry.xml",right_textures.normal,right_textures.over,right_textures.disabled,right_textures.down))
-	self.arrow_right:SetPosition(self.size_x*1/7,self.size_y*7/20)
 	self.arrow_right:SetNormalScale(0.5)
 	self.arrow_right:SetFocusScale(0.5)
 
@@ -160,7 +158,6 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	CreateButtonInfoHover(self,"arrow_right","Next Page")
 
 	self.page_text = self.bg:AddChild(Text(BUTTONFONT,32))
-	self.page_text:SetPosition(0,self.size_y*7/20)
 --	self.page_text:SetColour(UICOLOURS.GOLD_SELECTED)
 	self.page_text:SetColour(1,201/255,14/255,1) -- Gold coloured.
 	self.page_text:SetString("Page 1")
@@ -170,7 +167,6 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	local box_height = 40
 	self.searchtext = ""
 	self.searchbox_root = self.bg:AddChild(TEMPLATES.StandardSingleLineTextEntry(nil, box_size, box_height, nil, nil, "Search"))
-	self.searchbox_root:SetPosition(self.size_x*-2.25/7,self.size_y*7/20)
 	self.searchbox = self.searchbox_root.textbox
 	self.searchbox:SetTextLengthLimit(50)
 	self.searchbox:SetForceEdit(true)
@@ -188,6 +184,14 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.searchbox.OnMouseButton = function(_, button, down) if not down then self:CreateScreen() end end
 	--self.searchbox:SetOnGainFocus( function() self.searchbox:OnGainFocus() end )
 	--self.searchbox:SetOnLoseFocus( function() self.searchbox:OnLoseFocus() end )
+
+	self.clearbutton = self.bg:AddChild(ImageButton("images/global_redux.xml","close.tex"))
+	self.clearbutton:SetNormalScale(0.8)
+	self.clearbutton:SetFocusScale(0.8*1.2)
+	self.clearbutton_fn = function() self:ClearSearchbox() end
+	self.clearbutton:SetOnClick(self.clearbutton_fn)
+
+	CreateButtonInfoHover(self,"clearbutton","Clear Search")
 
 	local x_range = 10
 	local y_range = 5
@@ -217,12 +221,24 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.shown = false
 	self:Hide()
 
+	--//Button Locations--
+	self.skincheckbox:SetPosition(  self.size_x*-2.95/7,self.size_y*8/20)
+	self.searchbox_root:SetPosition(self.size_x*-2.25/7,self.size_y*6/20)
+	self.clearbutton:SetPosition(   self.size_x*-1.0 /7,self.size_y*6/20)
+	self.arrow_left:SetPosition(    self.size_x*-0.4 /7,self.size_y*7/20)
+	self.page_text:SetPosition(     self.size_x* 0.4 /7,self.size_y*7/20)
+	self.arrow_right:SetPosition(   self.size_x* 1.2 /7,self.size_y*7/20)
+	self.rangetext:SetPosition(     self.size_x* 2.0 /7,self.size_y*7/20)
+	self.refreshbutton:SetPosition( self.size_x* 2.9 /7,self.size_y*7/20)
+	--\\Button Locations--
+
 	self:StartUpdating()
 end)
 
 function GroundChestUI:ClearSearchbox()
 	self.searchbox:SetString("")
 	self.searchtext = ""
+	self:UpdateList()
 end
 
 function GroundChestUI:CreateScreen()
