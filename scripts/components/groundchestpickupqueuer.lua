@@ -12,8 +12,11 @@ function GroundChestPickupQueuer:PickupItem(item)
     if not item then return nil end
     local pos = ThePlayer:GetPosition() --item:GetPosition()
     if TheWorld and TheWorld.ismastersim then
-        ThePlayer.components.playercontroller:DoAction(BufferedAction(self.owner,item,ACTIONS.PICKUP))
-        ThePlayer.components.playercontroller:DoAction(BufferedAction(self.owner,item,ACTIONS.CHECKTRAP))
+        if item:HasTag("trapsprung") then
+            ThePlayer.components.playercontroller:DoAction(BufferedAction(self.owner,item,ACTIONS.CHECKTRAP))
+        else
+            ThePlayer.components.playercontroller:DoAction(BufferedAction(self.owner,item,ACTIONS.PICKUP))
+        end
     else
         SendRPCToServer(RPC.LeftClick,ACTIONS.PICKUP.code,pos.x,pos.z,item,true)
         SendRPCToServer(RPC.LeftClick,ACTIONS.CHECKTRAP.code,pos.x,pos.z,item,true)

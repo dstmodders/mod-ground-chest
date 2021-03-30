@@ -75,7 +75,8 @@ local function GenerateItemList(pos, distance)
 				result[num].groups = {}
 				result[num].prefab = prefab
 				result[num].name   = adjective..obj:GetBasicDisplayName()
-				result[num].durability = obj.components.finiteuses ~= nil
+				--result[num].durability = obj.components.finiteuses ~= nil
+				result[num].durability = false -- durability removed for now sinec it only affects caveless solo worlds, I might reintroduce it another time, perhaps.
 				if obj.replica.stackable then
 					result[num].amount = obj.replica.stackable:StackSize() or 0
 				else

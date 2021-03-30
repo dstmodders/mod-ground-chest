@@ -101,7 +101,7 @@ function GroundItemTile:SetQueue(queue,visual,all)
 	local build
 	local isheld_shift = TheInput:IsKeyDown(KEY_SHIFT)
 	if self.tex then
-		build = string.match(self.tex,"(%w+).tex")
+		build = string.match(self.tex,"(%S+)%.tex") -- Pattern (%w+).tex is bad because 1. The dot is a magic character; 2. %w+ will only grab the last word and not the entire string.
 	end
 	if queue then
 		self.item_bg:SetTextures("images/quagmire_recipebook.xml","recipe_known.tex")
