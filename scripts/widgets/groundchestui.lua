@@ -86,6 +86,48 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self:SetPosition(self.pos_x+self.offset_x,self.pos_y+self.offset_y)
 	self.bg:SetSize(self.size_x,self.size_y)
 	self.itembg = {atlas = "images/quagmire_recipebook.xml", tex = "cookbook_known.tex", scale = 0.4}
+    
+    --//Options Widgets--
+    local options_size = {x = 180+32, y = self.size_y}
+    self.optionswindow = self.bg:AddChild(Image("images/plantregistry.xml", "plant_cell_active.tex"))
+    self.optionswindow:SetSize(options_size.x,options_size.y)
+    self.optionswindow:SetPosition(16+(self.size_x+options_size.x)/2,0)
+    self.optionswindow:Hide() -- Visibility should strictly be related to the self.options_shown variable
+    
+    
+    self.options_text = self.optionswindow:AddChild(Text(NUMBERFONT,32))
+	self.options_text:SetColour(1,1,1,1)
+	self.options_text:SetString("Options")
+    
+    
+    self.optionsbutton = self.bg:AddChild(ImageButton("images/button_icons.xml","mods.tex")) -- mods.tex is the wrench!
+    --Toggles the Options Box(optionswindow)
+    local optionsbutton_colour_disabled = {0.5,0.5,0.5,0.5}
+    local optionsbutton_colour_enabled = {1,1,1,1}
+    
+    self.optionsbutton:SetNormalScale(0.2)
+    self.optionsbutton:SetFocusScale(0.2*1.2)
+    self.optionsbutton:SetImageNormalColour(unpack(optionsbutton_colour_disabled))
+    self.optionsbutton:SetImageFocusColour(unpack(optionsbutton_colour_disabled))
+    self.options_shown = false
+
+    self.optionsbutton_fn = function()
+        if not self.options_shown then
+            self.optionswindow:Show()
+            self.optionsbutton:SetImageNormalColour(unpack(optionsbutton_colour_enabled))
+            self.optionsbutton:SetImageFocusColour(unpack(optionsbutton_colour_enabled))
+        else
+            self.optionswindow:Hide()
+            self.optionsbutton:SetImageNormalColour(unpack(optionsbutton_colour_disabled))
+            self.optionsbutton:SetImageFocusColour(unpack(optionsbutton_colour_disabled))
+        end
+        self.options_shown = not self.options_shown 
+    end
+    self.optionsbutton:SetOnClick(self.optionsbutton_fn)
+    
+    CreateButtonInfoHover(self,"optionsbutton","Toggle Options")
+    --\\Options Widgets--
+    
 
 	local checkbox_fn = function(checkbox)
 		self.includeskins = not self.includeskins
@@ -94,7 +136,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 		checkbox:Refresh()
 		return true
 	end
-	self.skincheckbox = self.bg:AddChild(TEMPLATES.LabelCheckbox(checkbox_fn,self.includeskins,"Include Skins"))
+	self.skincheckbox = self.optionswindow:AddChild(TEMPLATES.LabelCheckbox(checkbox_fn,self.includeskins,"Include Skins"))
 	self.skincheckbox:SetFont(NUMBERFONT)
 	self.skincheckbox.text:SetPosition(20 + self.skincheckbox.text:GetRegionSize()/2, 0)
 
@@ -121,10 +163,10 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	}
 	
 	--//Search Range Widgets--
-	self.rangetext = self.bg:AddChild(TextButton("searchrange"))
+	self.rangetext = self.optionswindow:AddChild(TextButton("searchrange"))
 	self.rangetext:SetFont(NUMBERFONT)
 	self.rangetext:SetTextSize(27.5)
-	self.rangetext:SetText("Range:\n"..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
+	self.rangetext:SetText("Range:"..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
 	self.rangetext:SetTextColour(searchrange_colours[self.searchrange_num] or {1,1,1,1})
 --	self.rangetext:SetTextColour({1,1,1,1})
 	self.rangetext:SetTextFocusColour({1,0.8,0.05,1})
@@ -132,7 +174,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.rangetext_fn = function()
 		self.searchrange_num = (self.searchrange_num % 3) + 1
 		self.searchrange = searchrange_list[self.searchrange_num]
-		self.rangetext:SetText("Range:\n"..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
+		self.rangetext:SetText("Range:"..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
 		self.rangetext:SetTextColour(searchrange_colours[self.searchrange_num] or {1,1,1,1})
 	end
 	self.rangetext:SetOnClick(self.rangetext_fn)
@@ -192,7 +234,8 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.clearbutton:SetOnClick(self.clearbutton_fn)
 
 	CreateButtonInfoHover(self,"clearbutton","Clear Search")
-
+    
+    
 	local x_range = 10
 	local y_range = 5
 	for x = 1,x_range do
@@ -224,13 +267,20 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	--//Button Locations--
 	self.skincheckbox:SetPosition(  self.size_x*-2.95/7,self.size_y*8/20)
 	self.searchbox_root:SetPosition(self.size_x*-2.25/7,self.size_y*6/20)
+    self.optionsbutton:SetPosition( self.size_x*-1.0 /7,self.size_y*8/20)
 	self.clearbutton:SetPosition(   self.size_x*-1.0 /7,self.size_y*6/20)
 	self.arrow_left:SetPosition(    self.size_x*-0.4 /7,self.size_y*7/20)
 	self.page_text:SetPosition(     self.size_x* 0.4 /7,self.size_y*7/20)
 	self.arrow_right:SetPosition(   self.size_x* 1.2 /7,self.size_y*7/20)
-	self.rangetext:SetPosition(     self.size_x* 2.0 /7,self.size_y*7/20)
+--	self.rangetext:SetPosition(     self.size_x* 2.0 /7,self.size_y*7/20)
 	self.refreshbutton:SetPosition( self.size_x* 2.9 /7,self.size_y*7/20)
 	--\\Button Locations--
+    
+    --//Option Locations--
+    self.options_text:SetPosition( options_size.x* 0.0 /7,options_size.y*8.5/20)
+    self.rangetext:SetPosition(    options_size.x*-0.0 /7,options_size.y*6.5/20)
+    self.skincheckbox:SetPosition( options_size.x*-2.5 /7,options_size.y*4.5/20)
+    --\\Option Locations--
 
 	self:StartUpdating()
 end)
