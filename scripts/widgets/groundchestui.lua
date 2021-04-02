@@ -165,8 +165,9 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	--//Search Range Widgets--
 	self.rangetext = self.optionswindow:AddChild(TextButton("searchrange"))
 	self.rangetext:SetFont(NUMBERFONT)
-	self.rangetext:SetTextSize(27.5)
-	self.rangetext:SetText("Range:"..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
+--	self.rangetext:SetTextSize(27.5)
+	self.rangetext:SetTextSize(30)
+	self.rangetext:SetText("Range: "..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
 	self.rangetext:SetTextColour(searchrange_colours[self.searchrange_num] or {1,1,1,1})
 --	self.rangetext:SetTextColour({1,1,1,1})
 	self.rangetext:SetTextFocusColour({1,0.8,0.05,1})
@@ -174,7 +175,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.rangetext_fn = function()
 		self.searchrange_num = (self.searchrange_num % 3) + 1
 		self.searchrange = searchrange_list[self.searchrange_num]
-		self.rangetext:SetText("Range:"..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
+		self.rangetext:SetText("Range: "..(searchrange_names[self.searchrange_num] or tostring(self.searchrange)))
 		self.rangetext:SetTextColour(searchrange_colours[self.searchrange_num] or {1,1,1,1})
 	end
 	self.rangetext:SetOnClick(self.rangetext_fn)
@@ -265,22 +266,22 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self:Hide()
 
 	--//Button Locations--
-	self.skincheckbox:SetPosition(  self.size_x*-2.95/7,self.size_y*8/20)
-	self.searchbox_root:SetPosition(self.size_x*-2.25/7,self.size_y*6/20)
-    self.optionsbutton:SetPosition( self.size_x*-1.0 /7,self.size_y*8/20)
-	self.clearbutton:SetPosition(   self.size_x*-1.0 /7,self.size_y*6/20)
+--	self.skincheckbox:SetPosition(  self.size_x*-2.95/7,self.size_y*7/20)
+	self.searchbox_root:SetPosition(self.size_x*-2.25/7,self.size_y*7/20)
+	self.clearbutton:SetPosition(   self.size_x*-1.1 /7,self.size_y*7/20)
 	self.arrow_left:SetPosition(    self.size_x*-0.4 /7,self.size_y*7/20)
 	self.page_text:SetPosition(     self.size_x* 0.4 /7,self.size_y*7/20)
 	self.arrow_right:SetPosition(   self.size_x* 1.2 /7,self.size_y*7/20)
 --	self.rangetext:SetPosition(     self.size_x* 2.0 /7,self.size_y*7/20)
-	self.refreshbutton:SetPosition( self.size_x* 2.9 /7,self.size_y*7/20)
+	self.refreshbutton:SetPosition( self.size_x* 2.1 /7,self.size_y*7/20)
+	self.optionsbutton:SetPosition( self.size_x* 2.9 /7,self.size_y*7/20)
 	--\\Button Locations--
-    
-    --//Option Locations--
-    self.options_text:SetPosition( options_size.x* 0.0 /7,options_size.y*8.5/20)
-    self.rangetext:SetPosition(    options_size.x*-0.0 /7,options_size.y*6.5/20)
-    self.skincheckbox:SetPosition( options_size.x*-2.5 /7,options_size.y*4.5/20)
-    --\\Option Locations--
+
+	--//Option Locations--
+	self.options_text:SetPosition( options_size.x* 0.0 /7,options_size.y*8.5/20)
+	self.rangetext:SetPosition(    options_size.x*-0.0 /7,options_size.y*5.0/20)
+	self.skincheckbox:SetPosition( options_size.x*-2.0 /7,options_size.y*3.0/20)
+	--\\Option Locations--
 
 	self:StartUpdating()
 end)
