@@ -105,8 +105,16 @@ local function GenerateItemList(pos, distance)
 	return result
 end
 
+local highlightText
 local function sortResult(a,b)
 	if a.prefab ~= b.prefab then
+		if highlightText then
+			local result
+			result = string.lower(string.sub(a.name,1,#highlightText)) == highlightText
+			if result ~= (string.lower(string.sub(b.name,1,#highlightText)) == highlightText) then
+				return result
+			end
+		end
 		return a.name < b.name
 	elseif a.durability and b.durability then
 		return a.durability > b.durability
@@ -118,12 +126,12 @@ end
 
 local function FetchItemList(datalist, matchingText, includeSkins)
 	if not datalist then return nil end
+	matchingText = type(matchingText) ~= "string" and "" or string.lower(matchingText)
 	local result = {}
 	local num = 1
-	local advanced = includeSkins == nil and matchingText and matchingText ~= "" or includeSkins
-	matchingText = string.lower(matchingText)
+	local advanced = includeSkins == nil and matchingText ~= "" or includeSkins
 	for i = 1,#datalist do
-		if not matchingText or string.find(string.lower(datalist[i].name),matchingText,1,true) then
+		if matchingText == "" or string.find(string.lower(datalist[i].name),matchingText,1,true) then
 			if advanced then
 				local name = datalist[i].name
 				local prefab = datalist[i].prefab
@@ -157,6 +165,7 @@ local function FetchItemList(datalist, matchingText, includeSkins)
 			end
 		end
 	end
+	highlightText = matchingText ~= "" and matchingText or nil
 	table.sort(result,sortResult)
 	return result
 end

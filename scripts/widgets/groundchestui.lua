@@ -273,8 +273,8 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.page_text:SetPosition(     self.size_x* 0.4 /7,self.size_y*7/20)
 	self.arrow_right:SetPosition(   self.size_x* 1.2 /7,self.size_y*7/20)
 --	self.rangetext:SetPosition(     self.size_x* 2.0 /7,self.size_y*7/20)
-	self.refreshbutton:SetPosition( self.size_x* 2.1 /7,self.size_y*7/20)
-	self.optionsbutton:SetPosition( self.size_x* 2.9 /7,self.size_y*7/20)
+	self.optionsbutton:SetPosition( self.size_x* 2.1 /7,self.size_y*7/20)
+	self.refreshbutton:SetPosition( self.size_x* 2.9 /7,self.size_y*7/20)
 	--\\Button Locations--
 
 	--//Option Locations--
