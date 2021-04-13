@@ -72,7 +72,9 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.queue_conditions = {}
 	self.searchrange_num = searchrange_num
 	self.searchrange = searchrange_list[self.searchrange_num]
-	self.includeskins = false
+	self.option_skins = false
+	self.option_ocean = false
+	self.option_boats = false
 
 	self.pos_x = half_x--Centered
 	self.pos_y = half_y*1.5--At a 0.75/1 position from below.
@@ -128,17 +130,25 @@ local GroundChestUI = Class(Widget,function(self,owner)
     CreateButtonInfoHover(self,"optionsbutton","Toggle Options")
     --\\Options Widgets--
     
-
-	local checkbox_fn = function(checkbox)
-		self.includeskins = not self.includeskins
-		self:UpdateList()
-		checkbox.checked = self.includeskins
-		checkbox:Refresh()
-		return true
+	--//Checkboxes--
+	local fn_generateCheckbox = function(cb_def, cb_option, cb_desc)
+		self[cb_def] = self.optionswindow:AddChild(TEMPLATES.LabelCheckbox(function(checkbox)
+			self[cb_option] = not self[cb_option]
+			self:UpdateList()
+			checkbox.checked = self[cb_option]
+			checkbox:Refresh()
+			return true
+		end,self[cb_option],cb_desc))
+		self[cb_def]:SetFont(NUMBERFONT)
+		self[cb_def].text:SetPosition(20 + self[cb_def].text:GetRegionSize()/2, 0)
+		return self[cb_def]
 	end
-	self.skincheckbox = self.optionswindow:AddChild(TEMPLATES.LabelCheckbox(checkbox_fn,self.includeskins,"Include Skins"))
-	self.skincheckbox:SetFont(NUMBERFONT)
-	self.skincheckbox.text:SetPosition(20 + self.skincheckbox.text:GetRegionSize()/2, 0)
+
+	fn_generateCheckbox("skincheckbox", "option_skins","Include Skins")
+	fn_generateCheckbox("oceancheckbox","option_ocean","Ignore Ocean")
+	fn_generateCheckbox("boatcheckbox", "option_boats","Boat Mode")
+
+	--\\Checkboxes--
 
 	self.refreshbutton = self.bg:AddChild(ImageButton("images/button_icons.xml","refresh.tex"))
 	self.refreshbutton:SetNormalScale(0.2)
@@ -278,9 +288,11 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	--\\Button Locations--
 
 	--//Option Locations--
-	self.options_text:SetPosition( options_size.x* 0.0 /7,options_size.y*8.5/20)
-	self.rangetext:SetPosition(    options_size.x*-0.0 /7,options_size.y*5.0/20)
-	self.skincheckbox:SetPosition( options_size.x*-2.0 /7,options_size.y*3.0/20)
+	self.options_text:SetPosition( options_size.x* 0.0 /7,options_size.y* 8.5/20)
+	self.rangetext:SetPosition(    options_size.x*-0.0 /7,options_size.y* 5.0/20)
+	self.skincheckbox:SetPosition( options_size.x*-2.0 /7,options_size.y* 3.0/20)
+	self.oceancheckbox:SetPosition(options_size.x*-2.0 /7,options_size.y* 1.0/20)
+	self.boatcheckbox:SetPosition( options_size.x*-2.0 /7,options_size.y*-1.0/20)
 	--\\Option Locations--
 
 	self:StartUpdating()
@@ -428,10 +440,10 @@ function GroundChestUI:UpdateTiles()
 				end
 			end
 		end
-		local includeskins = self.includeskins == nil and self.searchtext ~= "" or self.includeskins or false
-		local global_queue,skin_queue,all = self:IsQueued(prefab,skin,includeskins)
+		local option_skins = self.option_skins == nil and self.searchtext ~= "" or self.option_skins or false
+		local global_queue,skin_queue,all = self:IsQueued(prefab,skin,option_skins)
 		tile:SetQueue(false,true)
-		if includeskins then -- Items get seperated by their skins while searching, that means highlighting should also change to be based on skin.
+		if option_skins then -- Items get seperated by their skins while searching, that means highlighting should also change to be based on skin.
 			tile:SetGlobalHighlight(false)
 			tile:SetQueue(skin_queue,true,all)
 		else -- If the string is empty, then items aren't seperated into skins and highlight should highlight all of that item with no respect to the skin.
@@ -442,7 +454,7 @@ function GroundChestUI:UpdateTiles()
 		tile:SetOnClickFn(function()
 			if tile:HasItem() then 
 				tile:ToggleQueue() 
-				self:ToggleQueueCondition(prefab,skin,includeskins)
+				self:ToggleQueueCondition(prefab,skin,option_skins)
 				tile:Ping()
 			end 
 		end)
@@ -466,13 +478,13 @@ end
 
 function GroundChestUI:RefreshList()
 	local x,y,z = ThePlayer.Transform:GetWorldPosition()
-	self.data_list = self.GenerateItemList({x = x, y = y, z = z},self.searchrange)
+	self.data_list = self.GenerateItemList({x = x, y = y, z = z},self.searchrange,{ocean = self.option_ocean, boats = self.option_boats})
 	print("list refreshed", #self.data_list)
 	self:UpdateList()
 end
 
 function GroundChestUI:UpdateList()
-	self.item_list = self.FetchItemList(self.data_list, self.searchbox:GetString(), self.includeskins)
+	self.item_list = self.FetchItemList(self.data_list, self.searchbox:GetString(), self.option_skins)
 	print("list updated", #self.item_list, self.searchbox:GetString())
 	self:UpdatePages()
 	self:UpdatePageText()

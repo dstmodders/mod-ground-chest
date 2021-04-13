@@ -48,16 +48,18 @@ local function GetTrueSkinName(build,prefab,method)
 	end
 end
 
-local function GenerateItemList(pos, distance)
---	local platform = TheWorld.Map:GetPlatformAtPoint(pos.x, pos.z)
+local function GenerateItemList(pos, distance, data)
+	data = type(data) == "table" and data or {}
+	local ignoreOcean = data.ocean
+	local includePlatforms = data.boats
+	local platform = TheWorld.Map:GetPlatformAtPoint(pos.x, pos.z)
 	local entities = TheSim:FindEntities(pos.x, pos.y, pos.z, distance, {"_inventoryitem"}, {"FX", "NOCLICK", "DECOR", "INLIMBO", "catchable", "mineactive", "intense"})
 	for i = #entities,1,-1 do
 		local obj = entities[i]
 		if obj.replica.inventoryitem == nil or not obj.replica.inventoryitem:CanBePickedUp() then
 			table.remove(entities,i)
--- Removed for now since there's a setting for range
---		elseif obj:GetCurrentPlatform() ~= platform or obj:IsOnOcean(false) then -- Objects located not in the same boat or in the ocean are excluded from the list
---			table.remove(entities,i)
+		elseif ignoreOcean and obj:IsOnOcean(false) or includePlatforms and obj:GetCurrentPlatform() ~= platform and not obj:IsOnOcean(false) then
+			table.remove(entities,i)
 		end
 	end
 	local result = {}
