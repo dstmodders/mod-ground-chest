@@ -77,8 +77,8 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 --	self:SetStackText(self.count)
 	if not item then self:RemoveItem() end
 
-	self.item_display:SetOnGainFocus(function() self:HighlightSelf(true) end)
-	self.item_display:SetOnLoseFocus(function() self:HighlightSelf(false) end)
+	self.item_display:SetOnGainFocus(function() self:SpawnTrackerArrow(true) self:HighlightSelf(true) end)
+	self.item_display:SetOnLoseFocus(function() self:SpawnTrackerArrow(false) self:HighlightSelf(false) end)
 	self:SetScale(self.widget_scale)
 	self:Show()
 	--self:StartUpdating() -- Currently no reason to be updating.
@@ -163,7 +163,8 @@ function GroundItemTile:RemoveItem()
 	self.hover_text = nil
 --	self:SetQueue(false) -- Changed to be handled at groundchestui.lua due to code order.
 	self:SetText(nil)
---	self:StopUpdating()
+    self:SpawnTrackerArrow(false)
+	self:StopUpdating()
 end
 
 function GroundItemTile:CheckForSpicedFood()
@@ -257,6 +258,43 @@ function GroundItemTile:HighlightSelf(highlight,colour)
 	end
 end
 
+function GroundItemTile:SpawnTrackerArrow(track)
+    if track then
+        self.tracker = SpawnPrefab("archive_resonator_base")
+        self.tracker.Light:Enable(false) -- The arrow is too heavy.
+        --Note: the tracker has a timer component, which forces it to remove itself after one in-game day.
+        --self.tracker.entity:SetParent(ThePlayer.entity) --Assuming ThePlayer isn't a nil value -- Too lazy to account for player rotation too :p
+        self:UpdateTracker()
+        self:StartUpdating()
+    elseif self.tracker then
+        self.tracker:Remove()
+        self.tracker = nil
+        self:StopUpdating()
+    end
+end
+
+function GroundItemTile:UpdateTracker()
+    if not self.tracker then
+        self:StopUpdating()
+        print("Stopped updating: no tracker arrow")
+        return
+    end
+    local closest_item = self:GetSelfItemList()[1]
+    if not closest_item then
+        print("Cannot find the item to track with an arrow!")
+        self:SpawnTrackerArrow(false)
+        return
+    else
+        local arrow = self.tracker
+        local pos = closest_item:GetPosition()
+        local player_pos = ThePlayer:GetPosition()
+        local angle = arrow:GetAngleToPoint(pos.x,pos.y,pos.z)
+        local scaler = math.sqrt(((player_pos.x-pos.x)*(player_pos.x-pos.x)+(player_pos.z-pos.z)*(player_pos.z-pos.z)))/2.7 --The arrow feels to be around 2.7 units long
+        arrow.Transform:SetRotation(angle+270)
+        arrow.Transform:SetPosition(player_pos.x,player_pos.y,player_pos.z)
+        arrow.Transform:SetScale(1,scaler,1)
+    end
+end
 
 function GroundItemTile:SetText(amount, durability)
 	if not self.item then
@@ -288,7 +326,7 @@ function GroundItemTile:HasItem()
 end
 
 function GroundItemTile:OnUpdate(dt)
-	
+	self:UpdateTracker()
 end
 
 return GroundItemTile
