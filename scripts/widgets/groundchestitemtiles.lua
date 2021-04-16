@@ -288,10 +288,11 @@ function GroundItemTile:UpdateTracker()
         local arrow = self.tracker
         local pos = closest_item:GetPosition()
         local player_pos = ThePlayer:GetPosition()
+        local difx, difz = player_pos.x-pos.x, player_pos.z-pos.z
         local angle = arrow:GetAngleToPoint(pos.x,pos.y,pos.z)
-        local scaler = math.sqrt(((player_pos.x-pos.x)*(player_pos.x-pos.x)+(player_pos.z-pos.z)*(player_pos.z-pos.z)))/2.7 --The arrow feels to be around 2.7 units long
+        local scaler = math.sqrt((difx*difx+difz*difz))/3.0 --The arrow feels to be around 2.7 units long
         arrow.Transform:SetRotation(angle+270)
-        arrow.Transform:SetPosition(player_pos.x,player_pos.y,player_pos.z)
+        arrow.Transform:SetPosition(player_pos.x-difx/6.5,player_pos.y,player_pos.z-difz/6.5)
         arrow.Transform:SetScale(1,scaler,1)
     end
 end
