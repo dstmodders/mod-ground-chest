@@ -229,7 +229,7 @@ end
 function GroundItemTile:GetSelfItemList()
 	if not self.item then return {} end
 	local pos = ThePlayer:GetPosition()
-	local ent_list = TheSim:FindEntities(pos.x,0,pos.z,80,{"_inventoryitem"}, {"FX", "NOCLICK", "DECOR"})
+	local ent_list = TheSim:FindEntities(pos.x,0,pos.z,80,{"_inventoryitem"}, {"FX", "NOCLICK", "DECOR","INLIMBO"})
 	local valid_ent_list = {}
 	for k,ent in pairs(ent_list) do
         local _isspiced_or_quagmire = string.match(self.item,"%w+_spice_%w+") or string.match(self.tex,"quagmire")
