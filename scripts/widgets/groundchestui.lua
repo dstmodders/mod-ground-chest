@@ -147,6 +147,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	fn_generateCheckbox("skincheckbox", "option_skins","Include Skins")
 	fn_generateCheckbox("oceancheckbox","option_ocean","Ignore Ocean")
 	fn_generateCheckbox("boatcheckbox", "option_boats","Boat Mode")
+    fn_generateCheckbox("stackcheckbox","option_ignorestacks","Ignore stacks")
 
 	--\\Checkboxes--
 
@@ -271,7 +272,8 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.bg:SetOnGainFocus(ongainfocus_fn)
 	self.bg:SetOnLoseFocus(onlosefocus_fn)
 
-	ThePlayer:ListenForEvent("groundchestpickupqueuer_stopped",function() self.queue_conditions = {} self:UpdateTiles() end)
+	self.owner:ListenForEvent("groundchestpickupqueuer_stopped",function() self.queue_conditions = {} self:UpdateTiles() end)
+    self.owner:ListenForEvent("groundchestpickupqueuer_queuecycle",function(origin,data) self:ToggleQueueCondition(data.prefab,data.skinned and (data.prefab == data.build and "default" or data.build) or false,not data.non_defaults) self:UpdateTiles() end)
 	self.shown = false
 	self:Hide()
 
@@ -293,6 +295,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.skincheckbox:SetPosition( options_size.x*-2.0 /7,options_size.y* 3.0/20)
 	self.oceancheckbox:SetPosition(options_size.x*-2.0 /7,options_size.y* 1.0/20)
 	self.boatcheckbox:SetPosition( options_size.x*-2.0 /7,options_size.y*-1.0/20)
+    self.stackcheckbox:SetPosition( options_size.x*-2.0 /7,options_size.y*-3.0/20)
 	--\\Option Locations--
 
 	self:StartUpdating()
@@ -486,6 +489,7 @@ end
 function GroundChestUI:UpdateList()
 	self.item_list = self.FetchItemList(self.data_list, self.searchbox:GetString(), self.option_skins)
 	print("list updated", #self.item_list, self.searchbox:GetString())
+    self.owner.components.groundchestpickupqueuer:SetIgnoreMaxedStacks(self.option_ignorestacks)
 	self:UpdatePages()
 	self:UpdatePageText()
 	self:UpdateTiles()

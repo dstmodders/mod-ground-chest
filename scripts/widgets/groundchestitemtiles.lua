@@ -6,6 +6,7 @@ local GetTrueSkinName = require "searchFunction".GetTrueSkinName
 local StatusAnnouncer = KnownModIndex:IsModEnabled(KnownModIndex:GetModActualName("Status Announcements")) and require "statusannouncer" -- Support for rezecib's mod 'Status Announcements'
 StatusAnnouncer = StatusAnnouncer and StatusAnnouncer() or nil
 
+
 --GroundItemTile Class: Holds some item information, widget clickable for some other functionality.
 local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 	Widget._ctor(self,"GroundItemTile")
@@ -226,10 +227,13 @@ local function IsMatchingTex(entity,tex,prefab)
 	return false
 end
 
-function GroundItemTile:GetSelfItemList()
+function GroundItemTile:GetSelfItemList(include_inventory_items)
 	if not self.item then return {} end
 	local pos = ThePlayer:GetPosition()
-	local ent_list = TheSim:FindEntities(pos.x,0,pos.z,80,{"_inventoryitem"}, {"FX", "NOCLICK", "DECOR","INLIMBO"})
+    local MUST_HAVE_TAGS = {"_inventoryitem"}
+    local CANT_HAVE_TAGS = {"FX", "NOCLICK", "DECOR"}
+    if not include_inventory_items then table.insert(CANT_HAVE_TAGS,"INLIMBO") end
+	local ent_list = TheSim:FindEntities(pos.x,0,pos.z,80,MUST_HAVE_TAGS,CANT_HAVE_TAGS)
 	local valid_ent_list = {}
 	for k,ent in pairs(ent_list) do
         local _isspiced_or_quagmire = string.match(self.item,"%w+_spice_%w+") or string.match(self.tex,"quagmire")
@@ -241,7 +245,7 @@ function GroundItemTile:GetSelfItemList()
 end
 
 function GroundItemTile:HighlightSelf(highlight,colour)
-	local valid_ents = self:GetSelfItemList()
+	local valid_ents = self:GetSelfItemList(true) -- Also means we'll highlight inventory items, but whatever.
 	local rgb = type(colour) == "table" and colour or {32/255,128/255,255/255,1}
 	if highlight then
 		for k,ent in pairs(valid_ents) do

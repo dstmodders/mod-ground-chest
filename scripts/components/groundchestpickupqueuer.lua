@@ -6,8 +6,14 @@ local GroundChestPickupQueuer = Class(function(self,inst)
         self.owner = inst
         self.queue = {}
         self.item_counter = 1
+        self.ignore_stacks = false
     end)
 
+
+function GroundChestPickupQueuer:SetIgnoreMaxedStacks(bool)
+   self.ignore_stacks = bool 
+   --print("self.ignore_stacks set to",bool)
+end
 function GroundChestPickupQueuer:PickupItem(item)
     if not item then return nil end
     local pos = ThePlayer:GetPosition() --item:GetPosition()
@@ -32,9 +38,12 @@ function GroundChestPickupQueuer:GetItemList(prefab,build,all,skinned,non_defaul
     local ent_list = TheSim:FindEntities(pos.x,0,pos.z,80,{"_inventoryitem"}, {"FX", "NOCLICK", "DECOR", "INLIMBO"})
     local valid_ents = {}
     local empty = true
+    local ignore_stacks = function(item)
+        return (not self.ignore_stacks) or item and ((not item.replica.stackable) or not item.replica.stackable:IsFull())
+    end
     for k,ent in pairs(ent_list) do
         local ent_build = ent.AnimState and ent.AnimState:GetBuild()
-        if ent.prefab == prefab and ((not skinned) and (non_defaults or STRINGS.SKIN_NAMES[ent_build] == nil) or (ent_build == build or GetTrueSkinName(ent_build,prefab) == build)) and not ent:IsOnOcean() then
+        if ent.prefab == prefab and ((not skinned) and (non_defaults or STRINGS.SKIN_NAMES[ent_build] == nil) or (ent_build == build or GetTrueSkinName(ent_build,prefab) == build)) and (not ent:IsOnOcean()) and ignore_stacks(ent) then
             table.insert(valid_ents,#valid_ents+1,ent)
             empty = false
             if not all then
@@ -47,7 +56,7 @@ end
 
 function GroundChestPickupQueuer:AddToQueue(prefab,build,all,skinned,non_defaults)
     local ent_list,empty = self:GetItemList(prefab,build,all,skinned,non_defaults)
-    if empty then return nil end
+    --if empty then print("Item List empty") return nil end
     --print("Added to queue: ","{",prefab,build,all,skinned,non_defaults,"}")
     self.queue[#self.queue+1] = {list = ent_list, prefab = prefab, build = build, skinned = skinned, all = all, non_defaults = non_defaults}
     if not self.owner[thread_name] then self:Start() end
@@ -78,6 +87,7 @@ function GroundChestPickupQueuer:Start()
 
                 local item = item_list[self.item_counter]
                 if not item then
+                    self.owner:PushEvent("groundchestpickupqueuer_queuecycle",self.queue[1])
                     table.remove(self.queue,1)
                     self.item_counter = 1
                 else
@@ -86,7 +96,12 @@ function GroundChestPickupQueuer:Start()
                             self:PickupItem(item)
                        end
                    else
-                       self.item_counter = self.item_counter+1
+                       table.remove(item_list,1)
+                       table.sort(item_list,
+                           function(a,b)
+                               return a:GetDistanceSqToInst(self.owner) < b:GetDistanceSqToInst(self.owner)
+                           end)
+                       self.item_counter = 1 -- self.item_counter = self.item_counter+1
                    end
                 end
             end
