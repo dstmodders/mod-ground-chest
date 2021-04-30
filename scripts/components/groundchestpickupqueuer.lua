@@ -99,7 +99,7 @@ function GroundChestPickupQueuer:Start()
                        table.remove(item_list,1)
                        table.sort(item_list,
                            function(a,b)
-                               return a:GetDistanceSqToInst(self.owner) < b:GetDistanceSqToInst(self.owner)
+                               return a:IsValid() and b:IsValid() and a:GetDistanceSqToInst(self.owner) < b:GetDistanceSqToInst(self.owner)
                            end)
                        self.item_counter = 1 -- self.item_counter = self.item_counter+1
                    end
