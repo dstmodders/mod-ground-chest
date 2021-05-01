@@ -15,7 +15,7 @@ local function GetTrueSkinName(build,prefab)
         end 
     end
     local item_skins = {}
-    local true_skin_name = nil
+    local true_skin_name = ""
     for p,data in pairs(skinprefabs) do
         if data.base_prefab == prefab then
            item_skins[p] = data 
