@@ -1,51 +1,34 @@
-
+local skinprefabs
 local function GetSkin(obj)
 	local skin = obj.skinname or obj.AnimState and obj.AnimState:GetBuild()
 	return STRINGS.SKIN_NAMES[skin] and skin or nil
 end
 
-local function GetTrueSkinName(build,prefab,method)
-	local function ApplyMethods()
-		local methods = {"_item","_drawn","item"}
-		local result
-		for k,v in pairs(methods) do
-			result = GetTrueSkinName(build,prefab,v)
-			if result and result ~= "" then
-				return result
-			end
-		end
-		return ""
-	end
-	if (not build) or (not prefab) or not (type(build) == "string" and type(prefab) == "string") then return "" end
-    local _,word_count = string.gsub(prefab,"%a+","")
-    local str = prefab
-    local words = {}
-    local word,Sstr,Estr
-    for i = 1,word_count do
-        Sstr,Estr = string.find(str,"%w+")
-        table.insert(words,#words+1,string.sub(str,Sstr,Estr))
-        str = string.sub(str,Estr+2,-1)
+local function GetTrueSkinName(build,prefab)
+    if not skinprefabs then --somewhat an "init" function
+        skinprefabs = {}
+       for k,data in pairs(Prefabs) do -- while prefabs/skinprefabs.lua can't unfortunately be accessed for all skin prefabs
+    --we can exclude tables by the variable is_skin and further reduce table size by checking the skin type
+            if data.is_skin and data.type == "item" then
+                skinprefabs[k] = {base_prefab = data.base_prefab, build_name_override = data.build_name_override}
+            end
+        end 
     end
-    local skin = build
-    for k,word in pairs(words) do
-        skin = string.gsub(skin,word,"")
-        skin = string.gsub(skin,"__+","_")
+    local item_skins = {}
+    local true_skin_name = nil
+    for p,data in pairs(skinprefabs) do
+        if data.base_prefab == prefab then
+           item_skins[p] = data 
+        end
     end
-	local possible_skin_name
-	if not method then
-		possible_skin_name = prefab..skin
-	elseif method then
-		possible_skin_name = string.gsub(prefab,method,"")..skin..method
-		possible_skin_name = string.gsub(possible_skin_name,"__+","_") -- In case there's any from doing a method in another non '_name' way.
-	end
-	
-	if possible_skin_name and GetInventoryItemAtlas(possible_skin_name..".tex",true) then
-		return possible_skin_name
-	elseif not method then
-		return ApplyMethods()
-	else
-		return ""
-	end
+    for skin_name,skin_data in pairs(item_skins) do
+       if build == skin_name or build == skin_data.build_name_override then
+           true_skin_name = skin_name
+           --print(true_skin_name)
+           break
+       end
+    end
+    return true_skin_name
 end
 
 local function GenerateItemList(pos, distance, data)

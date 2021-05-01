@@ -426,7 +426,8 @@ function GroundChestUI:UpdateTiles()
 		local atlas = tex and GetInventoryItemAtlas(tex,true) or nil
 		
 		local real_prefab = string.gsub(prefab or "","_cooked","")
-		if not atlas and skin then
+		if skin then --While atlas may exist, it could be the wrong atlas simply due to a mixed build
+            --(Eg. Radiant Star Caller has the same build as Prismatic Moon Caller)
 			skin = GetTrueSkinName(skin,prefab)
 			tex = skin..".tex"
 			atlas = GetInventoryItemAtlas(tex,true)
