@@ -237,7 +237,7 @@ function GroundItemTile:GetSelfItemList(include_inventory_items)
 	local valid_ent_list = {}
 	for k,ent in pairs(ent_list) do
         local _isspiced_or_quagmire = string.match(self.item,"%w+_spice_%w+") or string.match(self.tex,"quagmire")
-		if ent.prefab == self.item and (self.global_highlight or IsMatchingTex(ent,self.tex,self.item) or _isspiced_or_quagmire) then
+		if ent.prefab == self.item and ((not self.skinned) or (self.global_highlight or IsMatchingTex(ent,self.tex,self.item) or _isspiced_or_quagmire)) then
 			table.insert(valid_ent_list,#valid_ent_list+1,ent)
 		end
 	end
