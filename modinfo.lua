@@ -1,7 +1,7 @@
 name = "Ground Chest"
 description = "Open a UI to see items on the ground and interact with them."
 author = "sauktux & Viktor"
-version = "0".."v"
+version = "v".."1.0"
 forumthread = ""
 icon_atlas = "modicon.xml"
 icon = "modicon.tex"
