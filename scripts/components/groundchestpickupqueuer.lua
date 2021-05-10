@@ -17,12 +17,11 @@ end
 function GroundChestPickupQueuer:PickupItem(item)
     if not item then return nil end
     local pos = ThePlayer:GetPosition() --item:GetPosition()
-    if TheWorld and TheWorld.ismastersim then
-        if item:HasTag("trapsprung") then
-            ThePlayer.components.playercontroller:DoAction(BufferedAction(self.owner,item,ACTIONS.CHECKTRAP))
-        else
-            ThePlayer.components.playercontroller:DoAction(BufferedAction(self.owner,item,ACTIONS.PICKUP))
-        end
+    if (TheWorld and TheWorld.ismastersim) or self.owner.components.locomotor then -- Locomotor for an animation when Lag Compensation is on.
+        local action = item:HasTag("trapsprung") and ACTIONS.CHECKTRAP or ACTIONS.PICKUP
+        local buffed_act = BufferedAction(self.owner,item,action,nil,pos)
+        buffed_act.preview_cb = function() SendRPCToServer(RPC.LeftClick,action.code,pos.x,pos.z,item,true) end
+        self.owner.components.playercontroller:DoAction(buffed_act)
     else
         SendRPCToServer(RPC.LeftClick,ACTIONS.PICKUP.code,pos.x,pos.z,item,true)
         SendRPCToServer(RPC.LeftClick,ACTIONS.CHECKTRAP.code,pos.x,pos.z,item,true)
