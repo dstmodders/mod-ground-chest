@@ -102,6 +102,10 @@ local search_ranges = {
     FormatOption("Large",3),
 }
 
+local queue_types = {
+    FormatOption("True",true,"Items will be picked up in the order they were queued."),
+    FormatOption("False",false,"Items will be picked up based on which item is closest."),
+}
 --local search_ranges = {}
 --for i = 5,80,5 do
 --	search_ranges[i/5] = FormatOption(""..i,i)
@@ -126,4 +130,5 @@ local search_ranges = {
 configuration_options = {
 	AddOption("ui_button","Toggle UI","Press this button to turn the Ground Chest UI On/Off",keys_opt,114), -- Default key is 'R'
 	AddOption("searchrange","Search Range","The default range at which items will be searched for",search_ranges,2),
+    AddOption("queuetype","Respect Queue","Should the queue order be respected?",queue_types,false),
 }

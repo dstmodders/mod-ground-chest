@@ -30,6 +30,7 @@ end
 
 local ui_button = LoadConfig("ui_button")
 local searchrange_num = LoadConfig("searchrange")
+local queuetype = LoadConfig("queuetype")
 local searchrange_list = {6,25,80}
 local searchrange_names = {"Short","Medium","Large"}
 local searchrange_colours = {{0.6,0.6,0.6,1},{0.8,0.8,0.8,1},{1,1,1,1}}
@@ -75,6 +76,8 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.option_skins = false
 	self.option_ocean = false
 	self.option_boats = false
+    self.option_ignorestacks = false
+    self.option_respectqueueorder = queuetype
 
 	self.pos_x = half_x--Centered
 	self.pos_y = half_y*1.5--At a 0.75/1 position from below.
@@ -148,6 +151,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	fn_generateCheckbox("oceancheckbox","option_ocean","Ignore Ocean")
 	fn_generateCheckbox("boatcheckbox", "option_boats","Boat Mode")
     fn_generateCheckbox("stackcheckbox","option_ignorestacks","Ignore stacks")
+    fn_generateCheckbox("queuecheckbox","option_respectqueueorder","Respect Queue")
 
 	--\\Checkboxes--
 
@@ -295,7 +299,8 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.skincheckbox:SetPosition( options_size.x*-2.0 /7,options_size.y* 3.0/20)
 	self.oceancheckbox:SetPosition(options_size.x*-2.0 /7,options_size.y* 1.0/20)
 	self.boatcheckbox:SetPosition( options_size.x*-2.0 /7,options_size.y*-1.0/20)
-    self.stackcheckbox:SetPosition( options_size.x*-2.0 /7,options_size.y*-3.0/20)
+    self.stackcheckbox:SetPosition(options_size.x*-2.0 /7,options_size.y*-3.0/20)
+    self.queuecheckbox:SetPosition(options_size.x*-2.0 /7,options_size.y*-5.0/20)
 	--\\Option Locations--
 
 	self:StartUpdating()
@@ -491,6 +496,7 @@ function GroundChestUI:UpdateList()
 	self.item_list = self.FetchItemList(self.data_list, self.searchbox:GetString(), self.option_skins)
 	print("list updated", #self.item_list, self.searchbox:GetString())
     self.owner.components.groundchestpickupqueuer:SetIgnoreMaxedStacks(self.option_ignorestacks)
+    self.owner.components.groundchestpickupqueuer:SetRespectQueue(self.option_respectqueueorder)
 	self:UpdatePages()
 	self:UpdatePageText()
 	self:UpdateTiles()

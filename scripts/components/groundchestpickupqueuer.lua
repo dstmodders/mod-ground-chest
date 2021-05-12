@@ -7,6 +7,7 @@ local GroundChestPickupQueuer = Class(function(self,inst)
         self.queue = {}
         self.item_counter = 1
         self.ignore_stacks = false
+        self.respect_queue_order = true
     end)
 
 
@@ -14,6 +15,11 @@ function GroundChestPickupQueuer:SetIgnoreMaxedStacks(bool)
    self.ignore_stacks = bool 
    --print("self.ignore_stacks set to",bool)
 end
+
+function GroundChestPickupQueuer:SetRespectQueue(bool)
+    self.respect_queue_order = bool
+end
+
 function GroundChestPickupQueuer:PickupItem(item)
     if not item then return nil end
     local pos = ThePlayer:GetPosition() --item:GetPosition()
@@ -78,7 +84,18 @@ function GroundChestPickupQueuer:Start()
        self.owner[thread_name] = self.owner:StartThread(function()
             while true do
                 Sleep(check_delay)
+                if not self.respect_queue_order and #self.queue > 1 then-- If queue order doesn't matter then we can just throw everything into a single queue.
+                    local all_queued_items = {}
+                    for k,queue in pairs(self.queue) do
+                        for _,item in pairs(queue.list) do
+                            table.insert(all_queued_items,item)
+                        end
+                    end
+                    self.queue = {{list = all_queued_items}} --prefab, build, skinned, all, non_defaults are all nil.
+                end
+                
                 local item_list = self.queue[1] and self.queue[1].list
+                
                 if not item_list then
                    self:Stop()
                    return
