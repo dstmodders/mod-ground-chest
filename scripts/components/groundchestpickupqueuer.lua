@@ -77,6 +77,25 @@ function GroundChestPickupQueuer:RemoveFromQueue(prefab,build,skinned)
     end
 end
 
+function GroundChestPickupQueuer:FindClosestItemIndex(list)
+   if not list then return 1 end
+   if list and type(list) == "table" then
+       local mindist, mindist_item
+       local item_index = 1
+      for k,item in pairs(list) do
+        if item:IsValid() then
+            local distance = item:GetDistanceSqToInst(self.owner)
+            if (not mindist) or (distance < mindist) then
+                mindist = distance
+                --mindist_item = item
+                item_index = k
+            end
+        end
+      end
+      return item_index
+   end
+end
+
 function GroundChestPickupQueuer:Start()
     if self.owner[thread_name] then
         print("Queue '"..thread_name.."' already exists")
@@ -100,7 +119,7 @@ function GroundChestPickupQueuer:Start()
                    self:Stop()
                    return
                 end
-
+                self.item_counter = self:FindClosestItemIndex(item_list)
                 local item = item_list[self.item_counter]
                 if not item then
                     self.owner:PushEvent("groundchestpickupqueuer_queuecycle",self.queue[1])
@@ -112,12 +131,8 @@ function GroundChestPickupQueuer:Start()
                             self:PickupItem(item)
                        end
                    else
-                       table.remove(item_list,1)
-                       table.sort(item_list,
-                           function(a,b)
-                               return a:IsValid() and b:IsValid() and a:GetDistanceSqToInst(self.owner) < b:GetDistanceSqToInst(self.owner)
-                           end)
-                       self.item_counter = 1 -- self.item_counter = self.item_counter+1
+                       table.remove(item_list,self.item_counter)
+                       self.item_counter = 1
                    end
                 end
             end
