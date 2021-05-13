@@ -77,7 +77,7 @@ function GroundChestPickupQueuer:RemoveFromQueue(prefab,build,skinned)
     end
 end
 
-function GroundChestPickupQueuer:FindClosestItemIndex(list)
+function GroundChestPickupQueuer:FindClosestItemIndex(list,list_sizes)
    if not list then return 1 end
    if list and type(list) == "table" then
        local mindist, mindist_item
@@ -90,53 +90,107 @@ function GroundChestPickupQueuer:FindClosestItemIndex(list)
                 --mindist_item = item
                 item_index = k
             end
+        else -- While this function shouldn't be responsible for removing items, they won't get referenced => they'll be ignored.
+            self:RemoveNonValidItem(list_sizes,k)
         end
       end
       return item_index
    end
 end
 
+local function GetQueueIndexFromAssignedSizeList(size_list,index)
+    --Given a table of sizes and an index, return the array to which the index belongs to
+    --And what that index would be in that specific array.
+    local range = 0
+    local list_index
+    for k,index_size in pairs(size_list) do
+        if index_size+range < index then
+            range = range+index_size
+        else
+            list_index = k
+            break
+        end
+    end
+    return list_index,index-range
+end
+
+function GroundChestPickupQueuer:RemoveNonValidItem(list_sizes,item_index)
+    local array,index = GetQueueIndexFromAssignedSizeList(list_sizes,item_index)
+    local queue_table = self.queue[array]
+    if queue_table then
+        table.remove(queue_table.list,index)
+        if #queue_table.list == 0 then
+            self.owner:PushEvent("groundchestpickupqueuer_queuecycle",queue_table)
+            table.remove(self.queue,array) 
+        end
+    end
+end
+
+function GroundChestPickupQueuer:GetQueueFunction(queue)
+    local queues = {
+        ["ordered"] = function() 
+                        while true do
+                            Sleep(check_delay)
+                            local item_list = self.queue[1] and self.queue[1].list
+                            if not item_list then
+                                self:Stop()
+                                return
+                            end
+                            self.item_counter = self:FindClosestItemIndex(item_list)
+                            local item = item_list[self.item_counter]
+                            if not item then
+                                self.owner:PushEvent("groundchestpickupqueuer_queuecycle",self.queue[1])
+                                table.remove(self.queue,1)
+                                self.item_counter = 1
+                            else
+                                if self:CheckItemValid(item) then
+                                    if not self.owner.components.playercontroller:IsDoingOrWorking() then
+                                        self:PickupItem(item)
+                                    end
+                                else
+                                    table.remove(item_list,self.item_counter)
+                                    self.item_counter = 1
+                                end
+                            end
+                        end
+                    end,
+        ["closest"] = function()
+                        while true do
+                            Sleep(check_delay)
+                            local list_sizes = {}
+                            local queued_items = {}
+                            for k,list in pairs(self.queue) do
+                                list_sizes[k] = #list.list 
+                                for _,item in pairs(list.list) do
+                                    table.insert(queued_items,item) 
+                                end
+                            end
+                            if not queued_items[1] then
+                                self:Stop()
+                                return
+                            end
+                            self.item_counter = self:FindClosestItemIndex(queued_items,list_sizes)
+                            local item = queued_items[self.item_counter]
+                            if self:CheckItemValid(item) then
+                                if not self.owner.components.playercontroller:IsDoingOrWorking() then
+                                    self:PickupItem(item) 
+                                end
+                            else
+                                self:RemoveNonValidItem(list_sizes,self.item_counter)
+                                self.item_counter = 1
+                            end
+                        end
+                    end,
+    }
+    return queues[queue]
+end
+
 function GroundChestPickupQueuer:Start()
     if self.owner[thread_name] then
         print("Queue '"..thread_name.."' already exists")
     else
-       self.owner[thread_name] = self.owner:StartThread(function()
-            while true do
-                Sleep(check_delay)
-                if not self.respect_queue_order and #self.queue > 1 then-- If queue order doesn't matter then we can just throw everything into a single queue.
-                    local all_queued_items = {}
-                    for k,queue in pairs(self.queue) do
-                        for _,item in pairs(queue.list) do
-                            table.insert(all_queued_items,item)
-                        end
-                    end
-                    self.queue = {{list = all_queued_items}} --prefab, build, skinned, all, non_defaults are all nil.
-                end
-                
-                local item_list = self.queue[1] and self.queue[1].list
-                
-                if not item_list then
-                   self:Stop()
-                   return
-                end
-                self.item_counter = self:FindClosestItemIndex(item_list)
-                local item = item_list[self.item_counter]
-                if not item then
-                    self.owner:PushEvent("groundchestpickupqueuer_queuecycle",self.queue[1])
-                    table.remove(self.queue,1)
-                    self.item_counter = 1
-                else
-                   if self:CheckItemValid(item) then
-                       if not self.owner.components.playercontroller:IsDoingOrWorking() then
-                            self:PickupItem(item)
-                       end
-                   else
-                       table.remove(item_list,self.item_counter)
-                       self.item_counter = 1
-                   end
-                end
-            end
-       end)
+        local queue = self.respect_queue_order and "ordered" or "closest"
+       self.owner[thread_name] = self.owner:StartThread(self:GetQueueFunction(queue))
         self.owner[thread_name].id = thread_name
     end
 end
