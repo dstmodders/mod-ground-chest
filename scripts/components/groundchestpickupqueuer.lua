@@ -90,7 +90,7 @@ function GroundChestPickupQueuer:FindClosestItemIndex(list,list_sizes)
                 --mindist_item = item
                 item_index = k
             end
-        else -- While this function shouldn't be responsible for removing items, they won't get referenced => they'll be ignored.
+        elseif list_sizes then -- While this function shouldn't be responsible for removing items, they won't get referenced => they'll be ignored.
             self:RemoveNonValidItem(list_sizes,k)
         end
       end
