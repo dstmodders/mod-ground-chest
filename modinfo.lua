@@ -130,5 +130,9 @@ local queue_types = {
 configuration_options = {
 	AddOption("ui_button","Toggle UI","Press this button to turn the Ground Chest UI On/Off",keys_opt,114), -- Default key is 'R'
 	AddOption("searchrange","Search Range","The default range at which items will be searched for",search_ranges,2),
+    AddOption("includeskins","Include Skins","Whether the items should be shown as their default item or separated into skins.",bool_opt,false),
+    AddOption("ignoreocean","Ignore Ocean","Whether to show items that are in the ocean.",bool_opt,false),
+    AddOption("boatmode","Boat Mode","Exclude items not located on the current boat.",bool_opt,false),
+    AddOption("ignorestacks","Ignore Stacks","Whether items, which are already fully stacked, should be picked up via item queueing.",bool_opt,false),
     AddOption("queuetype","Respect Queue","Should the queue order be respected?",queue_types,false),
 }

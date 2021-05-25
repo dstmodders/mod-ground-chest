@@ -30,7 +30,12 @@ end
 
 local ui_button = LoadConfig("ui_button")
 local searchrange_num = LoadConfig("searchrange")
+local includeskins = LoadConfig("includeskins")
+local ignoreocean = LoadConfig("ignoreocean")
+local boatmode = LoadConfig("boatmode")
+local ignorestacks = LoadConfig("ignorestacks")
 local queuetype = LoadConfig("queuetype")
+
 local searchrange_list = {6,25,80}
 local searchrange_names = {"Short","Medium","Large"}
 local searchrange_colours = {{0.6,0.6,0.6,1},{0.8,0.8,0.8,1},{1,1,1,1}}
@@ -73,10 +78,10 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.queue_conditions = {}
 	self.searchrange_num = searchrange_num
 	self.searchrange = searchrange_list[self.searchrange_num]
-	self.option_skins = false
-	self.option_ocean = false
-	self.option_boats = false
-    self.option_ignorestacks = false
+	self.option_skins = includeskins
+	self.option_ocean = ignoreocean
+	self.option_boats = boatmode
+    self.option_ignorestacks = ignorestacks
     self.option_respectqueueorder = queuetype
 
 	self.pos_x = half_x--Centered
