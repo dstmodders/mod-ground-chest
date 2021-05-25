@@ -57,8 +57,8 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 
 	self.item_display = self.item_bg:AddChild(ImageButton(self.atlas,self.tex))
 	--The settings of scaling, colours, etc. should move over from "self.item_bg" as "self.item_display" is the child.
-
-	self.item_display:SetScale(2,2,2) -- The item is rather small compared to the tile itself.
+    self.item_display_scale = {x = 2,y = 2,z = 2}
+	self.item_display:SetScale(self.item_display_scale.x,self.item_display_scale.y,self.item_display_scale.z) -- The item is rather small compared to the tile itself.
 	
 	self.item_display_bg = self.item_display:AddChild(ImageButton()) -- This will usually be hidden.
 	-- self.item_display_bg can be visible when there's a special background(Spiced food, known freshness, etc.)
@@ -73,7 +73,7 @@ local GroundItemTile = Class(Widget,function(self,item,bg,atlas,tex,count)
 --	self.count_text:SetPosition(0,16) --Default position for an item that's in an "inventory slot"s.
 
 	self.item_bg:SetOnGainFocus(function() self.text_upper:SetScale(focus_scl) self.text_lower:SetScale(focus_scl) end)
-	self.item_bg:SetOnLoseFocus(function() self.text_upper:SetScale(1) self.text_lower:SetScale(1) end)
+	self.item_bg:SetOnLoseFocus(function() self.text_upper:SetScale(normal_scl) self.text_lower:SetScale(normal_scl) end)
 
 --	self:SetStackText(self.count)
 	if not item then self:RemoveItem() end
@@ -205,6 +205,12 @@ function GroundItemTile:SetItem(item,atlas,tex,skinned)
 	local name = self:CheckForSpicedFood()
 	self.skinned = skinned
 	self.item_display:SetTextures(self.atlas,self.tex)
+    local tile_x,tile_y = self.item_bg:GetSize()
+    local item_x,item_y = self.item_display:GetSize()
+    local item_scale_x = tile_x/item_x -- Don't let the size overflow.
+    local item_scale_y = tile_y/item_y -- Will this look weirdly stretched?
+    self.item_display_scale = {x = item_scale_x,y = item_scale_y,z = 2}
+	self.item_display:SetScale(self.item_display_scale.x,self.item_display_scale.y,self.item_display_scale.z)
 	self.item_display:Show()
     self.hover_text = name or (item and STRINGS.NAMES[string.upper(item)]) or ""
 	self.item_display:SetHoverText(self.hover_text)
