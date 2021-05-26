@@ -92,8 +92,8 @@ local keys_opt = {
 }
 
 local bool_opt = {
-    FormatOption("True",true),
-    FormatOption("False",false),
+    FormatOption("Disabled",false),
+    FormatOption("Enabled",true),
 }
 
 local search_ranges = {
@@ -102,37 +102,24 @@ local search_ranges = {
     FormatOption("Large",3),
 }
 
-local queue_types = {
-    FormatOption("True",true,"Items will be picked up in the order they were queued."),
-    FormatOption("False",false,"Items will be picked up based on which item is closest."),
-}
---local search_ranges = {}
---for i = 5,80,5 do
---	search_ranges[i/5] = FormatOption(""..i,i)
---end
+local percent_opt = {}
+for i = 0,19 do
+	percent_opt[i+1] = FormatOption((i*5).."%",i*0.05)
+end
+percent_opt[1].hover = "Doesn't fade at all."
 
---[[local colours = {--Defined in RGB.
-	{1,1,1},--White
-	{0,0,0},--Black
-	{1,0,0},--Red
-	{0,1,0},--Green
-	{0,0,1},--Blue
-	{0,1,1},--Cyan
-	{1,0,1},--Magenta
-	{1,1,0},--Yellow
-	{1,0.6,1},--Pink
-	{1,0.5,0},--Orange
-	{0.2,0,0},--Dark Red
-	{1,0.2,0},--Dark Green
-	{0,0,0.2},--Dark Blue
-	}--]]
+local queue_types = {
+    FormatOption("No",false,"Items will be picked up based on which item is closest."),
+    FormatOption("Yes",true,"Items will be picked up in the order they were queued."),
+}
 
 configuration_options = {
 	AddOption("ui_button","Toggle UI","Press this button to turn the Ground Chest UI On/Off",keys_opt,114), -- Default key is 'R'
 	AddOption("searchrange","Search Range","The default range at which items will be searched for",search_ranges,2),
     AddOption("includeskins","Include Skins","Whether the items should be shown as their default item or separated into skins.",bool_opt,false),
     AddOption("ignoreocean","Ignore Ocean","Whether to show items that are in the ocean.",bool_opt,false),
-    AddOption("boatmode","Boat Mode","Exclude items not located on the current boat.",bool_opt,false),
+    AddOption("boatmode","Boat Mode","Exclude items not located on the current boat or island.",bool_opt,false),
     AddOption("ignorestacks","Ignore Stacks","Whether items, which are already fully stacked, should be picked up via item queueing.",bool_opt,false),
     AddOption("queuetype","Respect Queue","Should the queue order be respected?",queue_types,false),
+    AddOption("uifade","UI Fading","Fades the Ground Chest UI if not focused.\nHigher value means less visibility.",percent_opt,0.50),
 }

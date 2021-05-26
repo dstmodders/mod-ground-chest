@@ -35,6 +35,8 @@ local ignoreocean = LoadConfig("ignoreocean")
 local boatmode = LoadConfig("boatmode")
 local ignorestacks = LoadConfig("ignorestacks")
 local queuetype = LoadConfig("queuetype")
+local ui_fading = LoadConfig("uifade")
+ui_fading = ui_fading and 1.0-ui_fading or 0.50
 
 local searchrange_list = {6,25,80}
 local searchrange_names = {"Short","Medium","Large"}
@@ -276,8 +278,8 @@ local GroundChestUI = Class(Widget,function(self,owner)
 		end
 	end
 
-	local ongainfocus_fn = function() self.focused = true end
-	local onlosefocus_fn = function() self.focused = false end
+	local ongainfocus_fn = function() self.focused = true self:Appear() end
+	local onlosefocus_fn = function() self.focused = false self:Fade() end
 	self.bg:SetOnGainFocus(ongainfocus_fn)
 	self.bg:SetOnLoseFocus(onlosefocus_fn)
 
@@ -311,6 +313,18 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self:StartUpdating()
 end)
 
+function GroundChestUI:Fade()
+	if self.can_fade_alpha then
+		self:SetFadeAlpha(ui_fading,false)
+	end
+end
+
+function GroundChestUI:Appear()
+	if self.can_fade_alpha then
+		self:SetFadeAlpha(1.0,false)
+	end
+end
+
 function GroundChestUI:ClearSearchbox()
 	self.searchbox:SetString("")
 	self.searchtext = ""
@@ -338,6 +352,7 @@ function GroundChestUI:Toggle()
 		self.queue_conditions = {}
 		self:ClearSearchbox()
 		self:RefreshList()
+		self:Appear()
 		self:Show()
 	end
 	if TheInput:IsKeyDown(KEY_SHIFT) then
@@ -487,6 +502,9 @@ function GroundChestUI:UpdateTiles()
 			tile:RemoveItem()
 			tile:SetText(nil)
 		end
+	end
+	if not self.focused then
+		self:Fade()
 	end
 end
 
