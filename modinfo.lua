@@ -113,6 +113,11 @@ local queue_types = {
     FormatOption("Yes",true,"Items will be picked up in the order they were queued."),
 }
 
+local positions = {
+    FormatOption("No",false,"UI will always be at the Top position"),
+    FormatOption("Yes",true,"UI will be at the last moved position"),
+}
+
 configuration_options = {
 	AddOption("ui_button","Toggle UI","Press this button to turn the Ground Chest UI On/Off",keys_opt,114), -- Default key is 'R'
 	AddOption("searchrange","Search Range","The default range at which items will be searched for",search_ranges,2),
@@ -121,5 +126,6 @@ configuration_options = {
     AddOption("boatmode","Boat Mode","Exclude items not located on the current boat or island.",bool_opt,false),
     AddOption("ignorestacks","Ignore Stacks","Whether items, which are already fully stacked, should be picked up via item queueing.",bool_opt,false),
     AddOption("queuetype","Respect Queue","Should the queue order be respected?",queue_types,false),
+    AddOption("uselastposition","Remember Position","Should the UI position be remembered?",positions,false),
     AddOption("uifade","UI Fading","Fades the Ground Chest UI if not focused.\nHigher value means less visibility.",percent_opt,0.50),
 }

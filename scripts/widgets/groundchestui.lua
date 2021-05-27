@@ -35,6 +35,7 @@ local ignoreocean = LoadConfig("ignoreocean")
 local boatmode = LoadConfig("boatmode")
 local ignorestacks = LoadConfig("ignorestacks")
 local queuetype = LoadConfig("queuetype")
+local uselastposition = LoadConfig("uselastposition")
 local ui_fading = LoadConfig("uifade")
 ui_fading = ui_fading and 1.0-ui_fading or 0.50
 
@@ -85,6 +86,8 @@ local GroundChestUI = Class(Widget,function(self,owner)
 	self.option_boats = boatmode
     self.option_ignorestacks = ignorestacks
     self.option_respectqueueorder = queuetype
+    
+    self.modroot = nil -- For file handling
 
 	self.pos_x = half_x--Centered
 	self.pos_y = half_y*1.5--At a 0.75/1 position from below.
@@ -373,6 +376,52 @@ function GroundChestUI:UpdatePosition()
 	self:SetPosition(self.pos_x+self.offset_x,self.pos_y+self.offset_y)
 end
 
+function GroundChestUI:SetModRoot(root)
+   self.modroot = root
+   --print("Mod root set to",self.modroot)
+   self:SetPositionFromTextFile()
+end
+
+function GroundChestUI:SavePositionToTextFile()
+    if not self.modroot then print("Error: Cannot save position to text file. MODROOT is a nil value") return end
+    if self.modroot then
+       local pos_file = io.open(self.modroot.."scripts\\".."box_position.txt","w")
+       if pos_file then
+          pos_file:write(tostring(self.pos_x).." "..tostring(self.pos_y))
+       end
+       pos_file:close()
+    end
+end
+
+function GroundChestUI:SetPositionFromTextFile()
+   if not self.modroot then print("Error: Cannot load position. MODROOT is a nil value") return end
+   if self.modroot and uselastposition then
+      local pos_file = io.open(self.modroot.."scripts\\".."box_position.txt","r")
+      if pos_file then
+          local text_lines = pos_file:read("*all")
+          print(text_lines)
+          local start_x,end_x = string.find(text_lines,"[-]?%d+")
+          local start_y,end_y = string.find(text_lines,"[-]?%d+$")
+          if (start_x and end_x) and (start_y and end_y) and 
+             (start_x ~= start_y) and (end_x ~= end_y) then
+             local x = tonumber(string.sub(text_lines,start_x,end_x))
+             local y = tonumber(string.sub(text_lines,start_y,end_y))
+             if (x and y) then
+                local neg_out_x = -self.size_x/2+min_seen
+                local neg_out_y = -self.size_y/2+min_seen
+                local out_x = screen_x+self.size_x/2-min_seen
+                local out_y = screen_y+self.size_y/2-min_seen
+                -- No shenanigans for making it go waaaay off-screen.
+                self.pos_x = x > neg_out_x and x < out_x and x or (x < 0 and neg_out_x or out_x)
+                self.pos_y = y > neg_out_y and y < out_y and y or (y < 0 and neg_out_y or out_y)
+                self:UpdatePosition()
+             end
+             pos_file:close() -- Should trigger if the file was successfully opened.
+          end
+      end
+   end
+end
+
 function GroundChestUI:HandleMouseMovement()
 	if TheInput:IsControlPressed(CONTROL_PRIMARY) and self.focused then
 		local pos = TheInput:GetScreenPosition()
@@ -393,6 +442,8 @@ function GroundChestUI:HandleMouseMovement()
 		self.offset_x = 0
 		self.offset_y = 0
 		self.start_pos = nil
+        self:SavePositionToTextFile() -- This constantly triggers and creates the file if it doesn't exist
+        -- Is that bad practice?
 		self:UpdatePosition()
 	end	
 end

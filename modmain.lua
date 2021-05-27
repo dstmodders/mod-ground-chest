@@ -17,7 +17,9 @@ AddPlayerPostInit(function(inst)
         inst:DoTaskInTime(0,function()
                 if inst == _G.ThePlayer then
                     --Use one of these roots: top_root, right_root, left_root, bottom_root; or none.
-					_G.ThePlayer.HUD:AddChild(GroundChestUI(inst))
+                    local widget = GroundChestUI(inst)
+                    widget:SetModRoot(MODROOT)
+					_G.ThePlayer.HUD:AddChild(widget)
                 end
             end)
     end)
