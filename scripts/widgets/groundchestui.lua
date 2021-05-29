@@ -88,6 +88,7 @@ local GroundChestUI = Class(Widget,function(self,owner)
     self.option_respectqueueorder = queuetype
     
     self.modroot = nil -- For file handling
+    self.fade_alpha = 1
 
 	self.pos_x = half_x--Centered
 	self.pos_y = half_y*1.5--At a 0.75/1 position from below.
@@ -281,8 +282,8 @@ local GroundChestUI = Class(Widget,function(self,owner)
 		end
 	end
 
-	local ongainfocus_fn = function() self.focused = true self:Appear() end
-	local onlosefocus_fn = function() self.focused = false self:Fade() end
+	local ongainfocus_fn = function() self.focused = true self:FadeOverTime(nil,self.fade_alpha,1) end
+	local onlosefocus_fn = function() self.focused = false self:FadeOverTime(nil,self.fade_alpha,ui_fading) end
 	self.bg:SetOnGainFocus(ongainfocus_fn)
 	self.bg:SetOnLoseFocus(onlosefocus_fn)
 
@@ -319,14 +320,47 @@ end)
 function GroundChestUI:Fade()
 	if self.can_fade_alpha then
 		self:SetFadeAlpha(ui_fading,false)
+        self.fade_alpha = ui_fading
 	end
 end
 
 function GroundChestUI:Appear()
 	if self.can_fade_alpha then
 		self:SetFadeAlpha(1.0,false)
+        self.fade_alpha = 1
 	end
 end
+
+function GroundChestUI:FadeOverTime(time, startalpha, endalpha)
+    if self.fade_thread then
+        KillThreadsWithID(self.fade_thread.id)
+        self.fade_thread:SetList(nil)
+        self.fade_thread = nil
+    end
+    local fade_time  = time or 0.25
+    local tick_time = TheSim:GetTickTime()
+
+    self.fade_thread = StartThread(function()
+        local ticks = 0
+        while ticks*tick_time <= fade_time do
+            local fade_amount = startalpha+ticks*tick_time*(endalpha-startalpha)/fade_time
+            self:SetFadeAlpha(fade_amount,false)
+            self.fade_alpha = fade_amount
+            ticks = ticks + 1
+            
+            if ticks*tick_time > fade_time then
+                self:SetFadeAlpha(endalpha)
+                self.fade_alpha = endalpha
+                KillThreadsWithID(self.fade_thread.id)
+                self.fade_thread:SetList(nil)
+                self.fade_thread = nil
+            end
+
+            Sleep(tick_time)
+        end
+    end)
+end
+
 
 function GroundChestUI:ClearSearchbox()
 	self.searchbox:SetString("")
@@ -439,11 +473,12 @@ function GroundChestUI:HandleMouseMovement()
 		local out_y = screen_y+self.size_y/2-min_seen
 		self.pos_x = new_x > neg_out_x and new_x < out_x and new_x or (new_x < 0 and neg_out_x or out_x)
 		self.pos_y = new_y > neg_out_y and new_y < out_y and new_y or (new_y < 0 and neg_out_y or out_y)
+        if self.start_pos then
+            self:SavePositionToTextFile() -- Trigger it only once something moved, constantly creating a file sounds dangerous.
+        end
 		self.offset_x = 0
 		self.offset_y = 0
 		self.start_pos = nil
-        self:SavePositionToTextFile() -- This constantly triggers and creates the file if it doesn't exist
-        -- Is that bad practice?
 		self:UpdatePosition()
 	end	
 end
