@@ -433,7 +433,6 @@ function GroundChestUI:SetPositionFromTextFile()
       local pos_file = io.open(self.modroot.."scripts\\".."box_position.txt","r")
       if pos_file then
           local text_lines = pos_file:read("*all")
-          print(text_lines)
           local start_x,end_x = string.find(text_lines,"[-]?%d+")
           local start_y,end_y = string.find(text_lines,"[-]?%d+$")
           if (start_x and end_x) and (start_y and end_y) and 
