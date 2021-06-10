@@ -1,7 +1,7 @@
 # Ground Chest workshop mod
  A workshop mod for the Klei Entertainment developed game Dont Starve Together.
 
-![Mod Icon](https://github.com/sauktux/ground-chest-mod-images-private/blob/main/modicon3.bmp?raw=true)
+![Mod Icon](https://user-images.githubusercontent.com/64164791/121521119-59c5aa00-c9fc-11eb-9249-b90fa2c68d6e.jpg)
 
 ## Basic Info
 
@@ -22,12 +22,18 @@ Current UI(With no items nearby):
 
 ## Feature examples
 ### Searching
-![Searching.gif](https://github.com/sauktux/ground-chest-mod-images-private/blob/main/Searching_smol.gif?raw=true)
+
+![Searching.gif](https://user-images.githubusercontent.com/64164791/121521259-84affe00-c9fc-11eb-9e24-236e112985ec.gif)
+
 
 ### Pickup queueing
-![Pickup.gif](https://github.com/sauktux/ground-chest-mod-images-private/blob/main/Pickup_smol.gif?raw=true)
+
+![Pickup.gif](https://user-images.githubusercontent.com/64164791/121521302-94c7dd80-c9fc-11eb-9ea4-81f49b696012.gif)
+
 
 ### Highlighting on hover
-![Highlight.gif](https://github.com/sauktux/ground-chest-mod-images-private/blob/main/Highlight_smol.gif?raw=true)
+
+![Highlight.gif](https://user-images.githubusercontent.com/64164791/121521403-b1fcac00-c9fc-11eb-8cb9-38848f0ce3e6.gif)
+
 
 Note: UI may be subject to change over time to improve user experience.
