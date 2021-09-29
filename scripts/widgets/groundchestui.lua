@@ -343,6 +343,7 @@ function GroundChestUI:FadeOverTime(time, startalpha, endalpha)
     self.fade_thread = StartThread(function()
         local ticks = 0
         while ticks*tick_time <= fade_time do
+            Sleep(tick_time)
             local fade_amount = startalpha+ticks*tick_time*(endalpha-startalpha)/fade_time
             self:SetFadeAlpha(fade_amount,false)
             self.fade_alpha = fade_amount
@@ -355,8 +356,6 @@ function GroundChestUI:FadeOverTime(time, startalpha, endalpha)
                 self.fade_thread:SetList(nil)
                 self.fade_thread = nil
             end
-
-            Sleep(tick_time)
         end
     end)
 end
