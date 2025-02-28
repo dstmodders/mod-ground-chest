@@ -1,4 +1,4 @@
-local skinprefabs
+	local skinprefabs
 local function GetSkin(obj)
 	local skin = obj.skinname or obj.AnimState and obj.AnimState:GetBuild()
 	return STRINGS.SKIN_NAMES[skin] and skin or nil
@@ -31,7 +31,8 @@ local function GetTrueSkinName(build,prefab)
     return true_skin_name
 end
 
-local function GenerateItemList(pos, distance, data)
+local function GenerateItemList(user, distance, data)
+	local pos = user.Transform:GetWorldPosition()
 	data = type(data) == "table" and data or {}
 	local ignoreOcean = data.ocean
 	local includePlatforms = data.boats
@@ -39,7 +40,7 @@ local function GenerateItemList(pos, distance, data)
 	local entities = TheSim:FindEntities(pos.x, pos.y, pos.z, distance, {"_inventoryitem"}, {"FX", "NOCLICK", "DECOR", "INLIMBO", "catchable", "mineactive", "intense"})
 	for i = #entities,1,-1 do
 		local obj = entities[i]
-		if obj.replica.inventoryitem == nil or not obj.replica.inventoryitem:CanBePickedUp() then
+		if obj.replica.inventoryitem == nil or not obj.replica.inventoryitem:CanBePickedUp(user) then
 			table.remove(entities,i)
 		elseif ignoreOcean and obj:IsOnOcean(false) or includePlatforms and obj:GetCurrentPlatform() ~= platform and not obj:IsOnOcean(false) then
 			table.remove(entities,i)
