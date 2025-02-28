@@ -593,8 +593,7 @@ function GroundChestUI:UpdateTiles()
 end
 
 function GroundChestUI:RefreshList()
-	local x,y,z = ThePlayer.Transform:GetWorldPosition()
-	self.data_list = self.GenerateItemList({x = x, y = y, z = z},self.searchrange,{ocean = self.option_ocean, boats = self.option_boats})
+	self.data_list = self.GenerateItemList(ThePlayer,self.searchrange,{ocean = self.option_ocean, boats = self.option_boats})
 	print("list refreshed", #self.data_list)
 	self:UpdateList()
 end
