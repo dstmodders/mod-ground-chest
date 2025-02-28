@@ -32,7 +32,7 @@ local function GetTrueSkinName(build,prefab)
 end
 
 local function GenerateItemList(user, distance, data)
-	local pos = user.Transform:GetWorldPosition()
+	local pos = user:GetPosition()
 	data = type(data) == "table" and data or {}
 	local ignoreOcean = data.ocean
 	local includePlatforms = data.boats
