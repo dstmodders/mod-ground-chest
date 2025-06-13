@@ -12,6 +12,7 @@ dont_starve_compatible = false
 reign_of_giants_compatible = false
 dst_compatible = true
 api_version = 10
+priority = -1
 
 local function AddOption(name,label,hover,options,default)
     return  {
