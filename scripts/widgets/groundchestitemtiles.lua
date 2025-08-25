@@ -209,8 +209,16 @@ function GroundItemTile:SetItem(item,atlas,tex,skinned)
 	local name = self:CheckForSpicedFood()
 	self.skinned = skinned
 	self.item_display:SetTextures(self.atlas,self.tex)
-    local item_x,item_y = self.item_display:GetSize() or 1,1
-    local tile_x,tile_y = self.item_bg:GetSize() or item_x,item_y
+    local item_x,item_y = self.item_display:GetSize()
+	if not item_x or not item_y then
+		item_x = 1
+		item_y = 1
+	end
+    local tile_x,tile_y = self.item_bg:GetSize()
+	if tile_x == nil or tile_y == nil then
+		tile_x = item_x
+		tile_y = item_y
+	end
     local item_scale_x = tile_x/item_x -- Don't let the size overflow.
     local item_scale_y = tile_y/item_y -- Will this look weirdly stretched?
     self.item_display_scale = {x = item_scale_x,y = item_scale_y,z = 2}
