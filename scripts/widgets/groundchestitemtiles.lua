@@ -187,7 +187,11 @@ function GroundItemTile:CheckForSpicedFood()
 		self.item_display_bg:SetPosition(0,0)
 		self.item_display_bg:MoveToFront()
 		self.item_display_bg:Show()
-		local spiced_name = string.gsub(STRINGS.NAMES["SPICE_"..string.upper(spice).."_FOOD"],"{food}",STRINGS.NAMES[string.upper(food)])
+		local spice_name = "SPICE_"..string.upper(spice).."_FOOD"
+		spice_name = STRINGS.NAMES[spice_name] or spice_name
+		local food_name = string.upper(food)
+		food_name = STRINGS.NAMES[food_name] or food_name
+		local spiced_name = string.gsub(spice_name,"{food}",food_name)
 		return spiced_name
 	else
 		self.item_display_bg:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
@@ -205,8 +209,8 @@ function GroundItemTile:SetItem(item,atlas,tex,skinned)
 	local name = self:CheckForSpicedFood()
 	self.skinned = skinned
 	self.item_display:SetTextures(self.atlas,self.tex)
-    local tile_x,tile_y = self.item_bg:GetSize()
-    local item_x,item_y = self.item_display:GetSize()
+    local item_x,item_y = self.item_display:GetSize() or 1,1
+    local tile_x,tile_y = self.item_bg:GetSize() or item_x,item_y
     local item_scale_x = tile_x/item_x -- Don't let the size overflow.
     local item_scale_y = tile_y/item_y -- Will this look weirdly stretched?
     self.item_display_scale = {x = item_scale_x,y = item_scale_y,z = 2}
