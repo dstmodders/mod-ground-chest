@@ -187,7 +187,11 @@ function GroundItemTile:CheckForSpicedFood()
 		self.item_display_bg:SetPosition(0,0)
 		self.item_display_bg:MoveToFront()
 		self.item_display_bg:Show()
-		local spiced_name = string.gsub(STRINGS.NAMES["SPICE_"..string.upper(spice).."_FOOD"],"{food}",STRINGS.NAMES[string.upper(food)])
+		local spice_name = "SPICE_"..string.upper(spice).."_FOOD"
+		spice_name = STRINGS.NAMES[spice_name] or spice_name
+		local food_name = string.upper(food)
+		food_name = STRINGS.NAMES[food_name] or food_name
+		local spiced_name = string.gsub(spice_name,"{food}",food_name)
 		return spiced_name
 	else
 		self.item_display_bg:SetTextures("images/quagmire_recipebook.xml","coin_unknown.tex")
