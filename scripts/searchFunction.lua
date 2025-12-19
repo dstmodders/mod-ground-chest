@@ -54,8 +54,8 @@ local function GenerateItemList(user, distance, data)
 		if obj then
 			local prefab = obj.prefab
 			local adj_fn = obj.displayadjectivefn
-			local adj_fn_str = adj_fn and type(adj_fn()) == "string" and adj_fn()
-			local adjective = adj_fn_str and adj_fn_str.." " or ""
+			local adj_fn_str = adj_fn and adj_fn(obj) or nil
+			local adjective = adj_fn_str and type(adj_fn_str) == "string" and adj_fn_str.." " or ""
 			if not prefabToNum[prefab] then
 				result[num] = {}
 				result[num].groups = {}
